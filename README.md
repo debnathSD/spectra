@@ -33,7 +33,7 @@ re-renders and browser vitals.
 | **Node 18 or newer** | ⚠️ Some frontends may pin an older Node version; this tool needs **Node 18+** (Vite 5, puppeteer-core). Use a separate terminal for it. With nvm: `nvm install 18 && nvm use` inside this folder (there is a `.nvmrc` here). |
 | **Google Chrome** | Also works with Chromium or Microsoft Edge. Found automatically on macOS, Linux and Windows; otherwise set `CHROME_PATH` (see [Configuration](#configuration)). |
 | **The frontend running locally** | The frontend development server (your app's dev server), e.g. `http://localhost:3000` or any host/port your app uses. See step 2 below. |
-| A login for that app | You will sign in once per launch — see [Signing in](#signing-in). |
+| A login for that app (optional) | If your app requires sign-in, you will sign in once per launch — see [Signing in](#signing-in). |
 
 > **Profile a development build.** Production builds are minified and carry no per-file information, and React only
 > reports render timings in development mode. Dev builds are slower than production, so trust the *ranking* of what is
@@ -88,8 +88,8 @@ Open <http://localhost:5178> in any browser. That page is the *control panel*; t
 
 1. **Fill in the connect card** at the top of the profiler page:
   - **Page to profile** — the page you want to measure, e.g. `/path/to/page/` or `http://localhost:3000/path/to/page`.
-   - **Sign-in URL** *(optional but recommended)* — open **Advanced** and enter your app's login URL with `{url}` where the page goes. For example:
-    `http://localhost:3000/login/?redirect={url}`. Details in [Signing in](#signing-in).
+  - **Sign-in URL** *(optional)* — open **Advanced** only if the page requires a login; enter your app's login URL with `{url}` where the page goes. For example:
+   `http://localhost:3000/login/?redirect={url}`. Details in [Signing in](#signing-in).
      remembered next time. **Advanced** also holds **Headless** and **Attach to a running Chrome**.
 2. Click **Launch Chrome**. A new Chrome window opens, signs in and loads your page. Wait until the page has fully
    rendered. The session card now has two rows: the page (browser tab, URL, **Go**, **Reload**, a green
@@ -113,9 +113,8 @@ compare before and after a fix. **Delete** removes the selected one.
 The Chrome window starts **signed out every time**. Apps normally use *session* cookies, and Chrome throws those away
 when it closes — even though the tool keeps its profile in `.chrome-profile/`. Choose one of:
 
-- **Sign-in URL (recommended).** Enter it once next to *Page to profile*. The tool opens your page directly; only if
-  that fails or lands on a login screen does it sign in through the Sign-in URL and continue to the page. If you are
-  already signed in it is not used. It also applies when you press **Go** in the toolbar.
+- **Sign-in URL (optional, when required).** Enter it once next to *Page to profile* only if the page requires signing in.
+  The tool opens your page directly; if it lands on a login screen the Sign-in URL is used to sign in and continue to the page. If you are already signed in it is not used. It also applies when you press **Go** in the toolbar.
 
   ```
   http://localhost:3000/login/?redirect={url}
