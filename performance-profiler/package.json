@@ -1,0 +1,29 @@
+{
+  "name": "superset-frontend-perf-profiler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chrome DevTools Protocol profiler that names the files, functions and React components behind frontend slowness.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "demo": "vite --config fixtures/demo-app/vite.config.js",
+    "profile": "node server/cli.js",
+    "test": "node --test server/"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@jridgewell/trace-mapping": "^0.3.25",
+    "d3": "^7.9.0",
+    "highlight.js": "^11.10.0",
+    "puppeteer-core": "^22.15.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  }
+}

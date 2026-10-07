@@ -1,0 +1,286 @@
+/*
+ * Design tokens. <html data-theme="glass|space" data-mode="light|dark"> (set by
+ * theme.js) selects one of four palettes. Components only read the variables,
+ * so a theme never needs to touch component rules except for a few signature
+ * details at the bottom of this file.
+ */
+
+/* Shared shape + type tokens; themes override what they need. */
+:root {
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --btn-radius: 9px;
+  --blur: none;
+  --on-accent: #fff;
+  --label-case: none;
+  --label-tracking: 0;
+}
+
+/* ============ Liquid Glass ============ */
+:root[data-theme='glass'] {
+  --radius: 22px;
+  --radius-sm: 12px;
+  --btn-radius: 999px;
+  --blur: blur(28px) saturate(180%);
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    system-ui, sans-serif;
+}
+:root[data-theme='glass'][data-mode='light'] {
+  color-scheme: light;
+  --bg:
+    radial-gradient(900px 600px at 8% -8%, #b9dcff 0%, transparent 62%),
+    radial-gradient(800px 560px at 96% 4%, #ffd3ea 0%, transparent 58%),
+    radial-gradient(1000px 700px at 62% 112%, #d6cfff 0%, transparent 62%),
+    #eaeff7;
+  --panel: rgb(255 255 255 / 0.5);
+  --panel-solid: #f4f7fc;
+  --panel-border: rgb(255 255 255 / 0.75);
+  --panel-edge:
+    inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0 rgb(120 135 170 / 0.08);
+  --shadow: 0 1px 2px rgb(40 60 110 / 0.06), 0 12px 36px rgb(40 60 110 / 0.12);
+  --shadow-pop:
+    0 4px 12px rgb(40 60 110 / 0.12), 0 24px 60px rgb(40 60 110 / 0.22);
+  --surface: #f6f8fc;
+  --surface-2: rgb(255 255 255 / 0.62);
+  --control: rgb(255 255 255 / 0.7);
+  --control-hover: rgb(255 255 255 / 0.95);
+  --border: rgb(70 85 125 / 0.16);
+  --text: #0e1220;
+  --text-2: #444c5e;
+  --text-muted: #6d7588;
+  --grid: rgb(70 85 125 / 0.1);
+  --accent: #0a67d1;
+  --accent-strong: #0a6fdb;
+  --accent-soft: rgb(10 111 219 / 0.12);
+  --accent-glow: 0 6px 18px rgb(10 111 219 / 0.35);
+  --heat: #f2602f;
+  --cat-1: #0a6fdb;
+  --cat-2: #f2602f;
+  --cat-3: #1fa971;
+  --cat-4: #eba000;
+  --cat-5: #e5679b;
+  --cat-6: #5b54d6;
+  --cat-other: #a3a9b8;
+  --good: #1a7f37;
+  --warn: #a35607;
+  --poor: #c9302c;
+  --code-string: #17754f;
+  --code-keyword: #5b54d6;
+  --code-number: #a35607;
+}
+:root[data-theme='glass'][data-mode='dark'] {
+  color-scheme: dark;
+  --bg:
+    radial-gradient(
+      900px 600px at 6% -10%,
+      rgb(36 99 235 / 0.5) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      800px 560px at 98% 0%,
+      rgb(168 56 200 / 0.38) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      1000px 700px at 60% 115%,
+      rgb(20 150 170 / 0.3) 0%,
+      transparent 62%
+    ),
+    #0a0c13;
+  --panel: rgb(34 38 54 / 0.52);
+  --panel-solid: #161924;
+  --panel-border: rgb(255 255 255 / 0.14);
+  --panel-edge:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    inset 0 -1px 0 rgb(255 255 255 / 0.03);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 44px rgb(0 0 0 / 0.38);
+  --shadow-pop: 0 4px 14px rgb(0 0 0 / 0.4), 0 28px 70px rgb(0 0 0 / 0.55);
+  --surface: #12141d;
+  --surface-2: rgb(255 255 255 / 0.06);
+  --control: rgb(255 255 255 / 0.09);
+  --control-hover: rgb(255 255 255 / 0.16);
+  --border: rgb(255 255 255 / 0.13);
+  --text: #f4f6fb;
+  --text-2: #b8bfd0;
+  --text-muted: #8990a3;
+  --grid: rgb(255 255 255 / 0.07);
+  --accent: #4da3ff;
+  --accent-strong: #0a6fdb;
+  --accent-soft: rgb(77 163 255 / 0.18);
+  --accent-glow: 0 6px 22px rgb(10 111 219 / 0.5);
+  --heat: #ff7a4d;
+  --cat-1: #4da3ff;
+  --cat-2: #ff7a4d;
+  --cat-3: #30c98a;
+  --cat-4: #f0b429;
+  --cat-5: #f06ea0;
+  --cat-6: #9a93f5;
+  --cat-other: #6c7386;
+  --good: #3fcf6b;
+  --warn: #f0b04a;
+  --poor: #ff6b6b;
+  --code-string: #3fd49b;
+  --code-keyword: #a29bf7;
+  --code-number: #f0b04a;
+}
+
+/* ============ Space ============ */
+:root[data-theme='space'] {
+  --radius: 12px;
+  --radius-sm: 8px;
+  --btn-radius: 8px;
+  --blur: blur(10px);
+  --label-case: uppercase;
+  --label-tracking: 0.08em;
+  --font-ui:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+    sans-serif;
+}
+:root[data-theme='space'][data-mode='dark'] {
+  color-scheme: dark;
+  --bg:
+    radial-gradient(1px 1px at 22px 34px, rgb(255 255 255 / 0.9), transparent),
+    radial-gradient(1px 1px at 96px 128px, rgb(255 255 255 / 0.6), transparent),
+    radial-gradient(
+      1.5px 1.5px at 168px 62px,
+      rgb(160 200 255 / 0.9),
+      transparent
+    ),
+    radial-gradient(1px 1px at 58px 176px, rgb(255 255 255 / 0.5), transparent),
+    radial-gradient(
+      1.5px 1.5px at 190px 190px,
+      rgb(200 180 255 / 0.8),
+      transparent
+    ),
+    radial-gradient(
+      900px 620px at 82% -12%,
+      rgb(124 92 255 / 0.3),
+      transparent 62%
+    ),
+    radial-gradient(
+      800px 600px at -6% 108%,
+      rgb(0 190 255 / 0.18),
+      transparent 60%
+    ),
+    #04050d;
+  --bg-size:
+    210px 210px, 210px 210px, 210px 210px, 210px 210px, 210px 210px, auto, auto,
+    auto;
+  --panel: rgb(12 16 36 / 0.74);
+  --panel-solid: #0b0f24;
+  --panel-border: rgb(110 130 255 / 0.24);
+  --panel-edge: inset 0 1px 0 rgb(160 180 255 / 0.1);
+  --shadow: 0 0 0 1px rgb(0 0 0 / 0.4), 0 18px 50px rgb(0 0 0 / 0.55);
+  --shadow-pop:
+    0 0 0 1px rgb(110 130 255 / 0.25), 0 0 40px rgb(100 100 255 / 0.18),
+    0 28px 70px rgb(0 0 0 / 0.7);
+  --surface: #0a0d20;
+  --surface-2: rgb(110 130 255 / 0.07);
+  --control: rgb(110 130 255 / 0.1);
+  --control-hover: rgb(110 130 255 / 0.2);
+  --border: rgb(110 130 255 / 0.22);
+  --text: #eaeefc;
+  --text-2: #aab3d6;
+  --text-muted: #7b85ad;
+  --grid: rgb(110 130 255 / 0.1);
+  --accent: #6f9bff;
+  --accent-strong: #4565f0;
+  --accent-soft: rgb(111 155 255 / 0.16);
+  --accent-glow: 0 0 22px rgb(80 110 255 / 0.55);
+  --accent-2: #22d3ee;
+  --heat: #ff8a3d;
+  --cat-1: #6f9bff;
+  --cat-2: #ff8a3d;
+  --cat-3: #2dd4a0;
+  --cat-4: #fbbf24;
+  --cat-5: #f472b6;
+  --cat-6: #a78bfa;
+  --cat-other: #5f6890;
+  --good: #34d98b;
+  --warn: #fbbf24;
+  --poor: #ff6b81;
+  --code-string: #34d9a0;
+  --code-keyword: #b49bff;
+  --code-number: #fbbf24;
+}
+:root[data-theme='space'][data-mode='light'] {
+  color-scheme: light;
+  --bg:
+    radial-gradient(1px 1px at 22px 34px, rgb(79 70 229 / 0.35), transparent),
+    radial-gradient(1px 1px at 120px 130px, rgb(14 116 144 / 0.3), transparent),
+    radial-gradient(
+      1.5px 1.5px at 170px 70px,
+      rgb(79 70 229 / 0.3),
+      transparent
+    ),
+    radial-gradient(
+      900px 600px at 84% -12%,
+      rgb(129 140 248 / 0.32),
+      transparent 62%
+    ),
+    radial-gradient(
+      800px 600px at -6% 108%,
+      rgb(34 211 238 / 0.2),
+      transparent 60%
+    ),
+    #eef0fa;
+  --bg-size: 210px 210px, 210px 210px, 210px 210px, auto, auto, auto;
+  --panel: rgb(255 255 255 / 0.8);
+  --panel-solid: #f8f9ff;
+  --panel-border: rgb(79 70 229 / 0.2);
+  --panel-edge: inset 0 1px 0 rgb(255 255 255 / 0.9);
+  --shadow: 0 1px 2px rgb(30 27 100 / 0.06), 0 14px 40px rgb(30 27 100 / 0.12);
+  --shadow-pop:
+    0 0 0 1px rgb(79 70 229 / 0.15), 0 24px 60px rgb(30 27 100 / 0.24);
+  --surface: #f8f9ff;
+  --surface-2: rgb(79 70 229 / 0.05);
+  --control: rgb(255 255 255 / 0.9);
+  --control-hover: #fff;
+  --border: rgb(79 70 229 / 0.2);
+  --text: #0f1226;
+  --text-2: #424a6b;
+  --text-muted: #6a7192;
+  --grid: rgb(79 70 229 / 0.1);
+  --accent: #4338ca;
+  --accent-strong: #4f46e5;
+  --accent-soft: rgb(79 70 229 / 0.1);
+  --accent-glow: 0 6px 20px rgb(79 70 229 / 0.35);
+  --accent-2: #0e7490;
+  --heat: #e0560c;
+  --cat-1: #4f46e5;
+  --cat-2: #e0560c;
+  --cat-3: #0f9f78;
+  --cat-4: #d99100;
+  --cat-5: #d6458a;
+  --cat-6: #7c3aed;
+  --cat-other: #9aa0bd;
+  --good: #14803f;
+  --warn: #9a5200;
+  --poor: #c62839;
+  --code-string: #0f7a5a;
+  --code-keyword: #6d3fd6;
+  --code-number: #9a5200;
+}
+
+/* ---- signature details ---- */
+:root[data-theme='glass'] button.primary,
+:root[data-theme='glass'] .tabs button[aria-selected='true'] {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent 55%),
+    var(--accent-strong);
+}
+:root[data-theme='space'] button.primary {
+  background: linear-gradient(135deg, var(--accent-strong), #8b5cf6);
+  border-color: transparent;
+}
+:root[data-theme='space'] .brand-mark {
+  background: conic-gradient(from 210deg, #22d3ee, #6f6bff, #c084fc, #22d3ee);
+}
+:root[data-theme='glass'] .brand-mark {
+  background: linear-gradient(135deg, #5ac8fa, #0a84ff 55%, #bf5af2);
+}
