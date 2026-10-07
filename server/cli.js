@@ -1,7 +1,7 @@
 /**
  * Headless / scripted profiling:
  *
- *   npm run profile -- --url http://localhost:9000/ --mode load
+ *   npm run profile -- --url http://localhost:3000/ --mode load
  *   npm run profile -- --url http://localhost:5188/ --duration 8 --throttle 4
  *   npm run profile -- --url ... --scenario ./scenario.mjs   # export default async page => {…}
  *

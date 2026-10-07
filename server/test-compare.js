@@ -23,7 +23,7 @@ function makeReport(over = {}) {
     id: '20260930T100000-load',
     createdAt: '2026-09-30T10:00:00.000Z',
     meta: {
-      url: 'http://localhost:9000/pages/custom/579/?x=1',
+      url: 'http://localhost:3000/pages/custom/579/?x=1',
       mode: 'load',
       durationMs: 10000,
       cpuThrottle: 1,
@@ -331,7 +331,7 @@ test('comparability checks and confidence', () => {
   const differentPage = compareSides(
     side([a, a, a]),
     side([
-      makeReport({ meta: { url: 'http://localhost:9000/dashboards/2/' } }),
+      makeReport({ meta: { url: 'http://localhost:3000/dashboards/2/' } }),
       makeReport(),
       makeReport(),
     ]),

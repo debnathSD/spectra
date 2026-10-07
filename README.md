@@ -32,7 +32,7 @@ re-renders and browser vitals.
 | --- | --- |
 | **Node 18 or newer** | ⚠️ Some frontends may pin an older Node version; this tool needs **Node 18+** (Vite 5, puppeteer-core). Use a separate terminal for it. With nvm: `nvm install 18 && nvm use` inside this folder (there is a `.nvmrc` here). |
 | **Google Chrome** | Also works with Chromium or Microsoft Edge. Found automatically on macOS, Linux and Windows; otherwise set `CHROME_PATH` (see [Configuration](#configuration)). |
-| **The frontend running locally** | The webpack **development** server, normally <http://localhost:9000> with the Flask backend on 8088. See step 2 below. |
+| **The frontend running locally** | The frontend development server (your app's dev server), e.g. `http://localhost:3000` or any host/port your app uses. See step 2 below. |
 | A login for that app | You will sign in once per launch — see [Signing in](#signing-in). |
 
 > **Profile a development build.** Production builds are minified and carry no per-file information, and React only
@@ -66,14 +66,14 @@ You need three things running. Use three terminals.
 
 **1. Backend** — however you normally start your backend locally (e.g. an API server).
 
-**2. Frontend dev server** (your app's dev server, usually running on a port like `9000`):
+**2. Frontend dev server** (your app's dev server, usually running on a port like `3000`):
 
 ```bash
 # Run your app's dev server (example):
-npm run dev               # e.g. http://localhost:9000
+npm run dev               # e.g. http://localhost:3000
 ```
 
-Wait until webpack finishes compiling; open <http://localhost:9000> in your normal browser once to confirm the app loads.
+Wait until your frontend dev server finishes compiling; open it in your normal browser once to confirm the app loads.
 
 **3. The profiler** (Node 18+, in this folder `performance-profiler/`):
 
@@ -87,10 +87,9 @@ Open <http://localhost:5178> in any browser. That page is the *control panel*; t
 ## Your first recording
 
 1. **Fill in the connect card** at the top of the profiler page:
-   - **Page to profile** — the page you want to measure, e.g. `http://localhost:9000/pages/custom/879/?edit=true`.
-   - **Sign-in URL** *(optional but recommended for this repo)* — open **Advanced** and enter your app's login URL with
-     `{url}` where the page goes. For this repo's local auth:
-    `http://localhost:9000/login/?redirect={url}`. Details in [Signing in](#signing-in). It is
+  - **Page to profile** — the page you want to measure, e.g. `/path/to/page/` or `http://localhost:3000/path/to/page`.
+   - **Sign-in URL** *(optional but recommended)* — open **Advanced** and enter your app's login URL with `{url}` where the page goes. For example:
+    `http://localhost:3000/login/?redirect={url}`. Details in [Signing in](#signing-in).
      remembered next time. **Advanced** also holds **Headless** and **Attach to a running Chrome**.
 2. Click **Launch Chrome**. A new Chrome window opens, signs in and loads your page. Wait until the page has fully
    rendered. The session card now has two rows: the page (browser tab, URL, **Go**, **Reload**, a green
@@ -119,16 +118,16 @@ when it closes — even though the tool keeps its profile in `.chrome-profile/`.
   already signed in it is not used. It also applies when you press **Go** in the toolbar.
 
   ```
-  http://localhost:9000/login/?redirect={url}
+  http://localhost:3000/login/?redirect={url}
   ```
 
   `{url}` is replaced with the (URL-encoded) path and query of the page to profile. On the CLI: `--sign-in "…{url}"`.
 
 - **Sign in by hand** in the Chrome window after it opens, then continue.
 
-Why `?browser=island` here: some local login routes pick tokens from specific query parameters. Adjust the Sign-in URL
-for your app if it requires a special parameter. The token stays in the backend; **the profiler never asks for, stores or
-logs a token or password**, and the Sign-in URL must not contain one.
+Why `?browser=island` here: some local login routes pick tokens from specific query parameters. Adjust the Sign-in URL for
+your app if it requires a special parameter. Do not include tokens in the URL. The token stays in the backend; **the
+profiler never asks for, stores or logs a token or password**, and the Sign-in URL must not contain one.
 
 If the page still answers with an HTTP error, the toolbar shows a red banner and the report starts with a critical
 **“The page itself failed to load”** finding, because a recording of an error page tells you nothing about your app.
@@ -336,8 +335,8 @@ an icon (✓ ✕ =) and a word.
 | --- | --- |
 | `npm install` / `npm run dev` fails with syntax or engine errors | You are on Node 16 (the app's version). Switch this terminal to Node 18+ (`nvm use` in this folder). |
 | **“Chrome was not found”** | Set `CHROME_PATH` to the executable, e.g. `CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run dev`. |
-| Chrome opens on `{"message":"Internal error"}` at `/login/?next=…` | The login route needs `?browser=island` (see [Signing in](#signing-in)). Fill in the **Sign-in URL**, close Chrome and launch again. |
-| Red banner “The page answered HTTP 4xx/5xx” | The page failed to load — usually not signed in, or the backend/dev server is down. Check <http://localhost:9000> in a normal browser. |
+| Chrome opens on `{"message":"Internal error"}` at `/login/?next=…` | The login route may require a special query parameter (see [Signing in](#signing-in)). Fill in the **Sign-in URL**, close Chrome and launch again. |
+| Red banner “The page answered HTTP 4xx/5xx” | The page failed to load — usually not signed in, or the backend/dev server is down. Check <http://localhost:3000> in a normal browser. |
 | Amber pill “No React seen — reload the tab” | Press **Reload** (or use **Record page load**). The probe must load before React. |
 | “production build: no timings” | React is a production build. Profile the dev server, not a built bundle. |
 | Report says “Almost nothing ran…” | You recorded an idle page. Interact while recording, or use **Record page load**. |
@@ -361,16 +360,16 @@ message returned to the UI.
 
 Runs headless, prints the top culprits (with their exact functions) and saves the same report the UI shows.
 
-```bash
+  ```bash
 # startup profile
-npm run profile -- --url http://localhost:9000/pages/custom/879/ --mode load \
-  --sign-in "http://localhost:9000/login/?redirect={url}"
+npm run profile -- --url http://localhost:3000/path/to/page/ --mode load \
+  --sign-in "http://localhost:3000/login/?redirect={url}"
 
 # 15 s idle-interaction profile at 4x CPU slowdown
-npm run profile -- --url http://localhost:9000/ --duration 15 --throttle 4
+npm run profile -- --url http://localhost:3000/ --duration 15 --throttle 4
 
 # scripted scenario: the module default-exports async page => { … } (a puppeteer Page)
-npm run profile -- --url http://localhost:9000/ --scenario ./my-scenario.mjs
+npm run profile -- --url http://localhost:3000/ --scenario ./my-scenario.mjs
 
 # other flags: --headed (watch it run), --save-trace (also keep the raw trace)
 ```
@@ -385,7 +384,7 @@ Environment variables (all optional):
 | --- | --- | --- |
 | `PORT` | `5178` | Port of the profiler UI. |
 | `CHROME_PATH` | auto-detected | Chrome/Chromium/Edge executable. |
-| `PERF_TARGET_URL` | `http://localhost:9000/` | Pre-filled “Page to profile”. |
+| `PERF_TARGET_URL` | `http://localhost:3000/` | Pre-filled “Page to profile”. |
 | `PERF_TARGET_NAME` | inferred from the frontend's `package.json` or `PERF_TARGET_NAME` | Human-friendly name shown in the UI and PDFs. |
 | `PERF_CHROME_ARGS` | *(none)* | Extra Chrome flags, space separated. |
 | `PERF_CHROME_PROFILE_DIR` | `./.chrome-profile` | The tool's private Chrome profile. Use a different one to run the CLI while the UI's Chrome is open. |

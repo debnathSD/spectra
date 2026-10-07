@@ -76,7 +76,7 @@ function Connect({ status, run, isCompact }) {
             type="url"
             value={url}
             onChange={e => setUrl(e.target.value)}
-            placeholder="http://localhost:9000/"
+            placeholder="http://localhost:3000/"
           />
         </label>
         <button
@@ -108,7 +108,7 @@ function Connect({ status, run, isCompact }) {
                 <input
                   value={signIn}
                   onChange={e => setSignIn(e.target.value)}
-                  placeholder="http://localhost:9000/login/?browser=island&redirect={url}"
+                  placeholder="http://localhost:3000/login/?redirect={url}"
                 />
               </label>
               <label className="switch">

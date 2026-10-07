@@ -2,8 +2,8 @@
  * Builds the URL that signs in and then lands on `pageUrl`.
  *
  * `template` is the app's login URL with a `{url}` placeholder for the page to
- * return to, e.g. `http://localhost:9000/login/?browser=island&redirect={url}`.
- * `{url}` becomes the URL-encoded path + query of the page (relative, which is
+ * return to, e.g. `http://localhost:3000/login/?redirect={url}`.
+`{url}` becomes the URL-encoded path + query of the page (relative, which is
  * what login redirects usually accept). The template must not contain secrets:
  * it is remembered in the browser's localStorage.
  */

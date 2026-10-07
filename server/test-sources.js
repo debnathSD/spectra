@@ -100,14 +100,14 @@ test('webpack module markers map bundle lines back to module ids', () => {
 
 test('resolver falls back from source map to markers to URLs', async () => {
   const scripts = new Map([
-    ['1', { url: 'http://localhost:9000/static/assets/main.js' }],
+    ['1', { url: 'http://localhost:3000/static/assets/main.js' }],
     ['2', { url: 'http://localhost:5177/src/App.jsx?t=1' }],
     ['3', { url: 'pptr:evaluate;x' }],
-    ['4', { url: 'http://localhost:9000/static/assets/app.abcdef12.chunk.js' }],
+    ['4', { url: 'http://localhost:3000/static/assets/app.abcdef12.chunk.js' }],
   ]);
-  const resolver = new SourceResolver({
+    const resolver = new SourceResolver({
     root: ROOT,
-    scripts,
+      scripts,
     getSource: async id => (id === '1' ? bundle : 'console.log(1)'),
   });
   await resolver.prepare(['1', '2', '3', '4']);

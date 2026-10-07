@@ -272,7 +272,7 @@ test('a recording of an HTTP error page leads with a critical setup finding', ()
     meta: {
       durationMs: 3000,
       navStatus: 500,
-      navUrl: 'http://localhost:9000/login/',
+      navUrl: 'http://localhost:3000/login/',
     },
     react: {
       detected: false,
@@ -402,10 +402,10 @@ test('sign-in URLs embed the page to return to and detect a signed-out landing',
   const { buildSignInUrl, looksSignedOut } = await import('./signin.js');
   assert.equal(
     buildSignInUrl(
-      'http://h:9000/login/?browser=island&redirect={url}',
-      'http://h:9000/pages/custom/879/?edit=true&x=1#top',
+      'http://h/login/?redirect={url}',
+      'http://h/path/to/page/?edit=true&x=1#top',
     ),
-    'http://h:9000/login/?browser=island&redirect=%2Fpages%2Fcustom%2F879%2F%3Fedit%3Dtrue%26x%3D1%23top',
+    'http://h/login/?redirect=%2Fpath%2Fto%2Fpage%2F%3Fedit%3Dtrue%26x%3D1%23top',
   );
   assert.equal(buildSignInUrl('', 'http://h/p'), null);
   assert.equal(
@@ -418,7 +418,7 @@ test('sign-in URLs embed the page to return to and detect a signed-out landing',
   );
   assert.equal(looksSignedOut(null, 'http://h/login/?next=/p'), true);
   assert.equal(
-    looksSignedOut({ status: 200 }, 'http://h/pages/custom/1'),
+    looksSignedOut({ status: 200 }, 'http://h/path/to/page/1'),
     false,
   );
 });

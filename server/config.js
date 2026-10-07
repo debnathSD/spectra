@@ -23,7 +23,7 @@ export const CHROME_PROFILE_DIR =
   path.join(TOOL_ROOT, '.chrome-profile');
 
 export const DEFAULT_TARGET_URL =
-  process.env.PERF_TARGET_URL || 'http://localhost:9000/';
+  process.env.PERF_TARGET_URL || 'http://localhost:3000/';
 
 /** Human-friendly name for the profiled target (used in the UI and PDF). */
 let inferredName = 'target-frontend';
