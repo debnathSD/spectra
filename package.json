@@ -1,5 +1,5 @@
 {
-  "name": "superset-frontend-perf-profiler",
+  "name": "performance-profiler",
   "version": "1.0.0",
   "private": true,
   "description": "Chrome DevTools Protocol profiler that names the files, functions and React components behind frontend slowness.",

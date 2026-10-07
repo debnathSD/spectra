@@ -99,7 +99,7 @@ function decodeDataUrl(url) {
 export class SourceResolver {
   /**
    * @param {object} options
-   * @param {string} options.root        absolute path of superset-frontend
+   * @param {string} options.root        absolute path of the frontend project root
    * @param {Map<string, {url: string, sourceMapURL?: string}>} options.scripts  by scriptId
    * @param {(scriptId: string) => Promise<string>} options.getSource  Debugger.getScriptSource
    * @param {(url: string) => Promise<string>} [options.fetchText]

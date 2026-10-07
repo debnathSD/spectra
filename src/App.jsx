@@ -181,7 +181,7 @@ export default function App() {
           </span>
           <div>
             <h1>Performance Profiler</h1>
-            <small>superset-frontend</small>
+            <small>{status?.defaultName || 'target-frontend'}</small>
           </div>
         </div>
         <span className="spacer" />

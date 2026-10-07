@@ -16,6 +16,7 @@ import {
   formatPct,
   formatValue,
 } from '../../shared/compare.js';
+import { TARGET_NAME } from '../config.js';
 
 const esc = value =>
   String(value ?? '')
@@ -367,7 +368,7 @@ function header(cmp, kind) {
   const b = cmp.before.git?.shortHash || 'before';
   const a = cmp.after.git?.shortHash || 'after';
   return `<h1>Performance comparison</h1>
-    <p class="sub">superset-frontend · <span class="mono">${esc(b)}</span> → <span class="mono">${esc(a)}</span> · ${kind === 'summary' ? 'Summary' : 'Detailed report'} · generated ${esc(new Date(cmp.generatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }))}</p>
+    <p class="sub">${esc(TARGET_NAME)} · <span class="mono">${esc(b)}</span> → <span class="mono">${esc(a)}</span> · ${kind === 'summary' ? 'Summary' : 'Detailed report'} · generated ${esc(new Date(cmp.generatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }))}</p>
     <div class="pair">${commitCard('Before', cmp.before)}${commitCard('After', cmp.after)}</div>`;
 }
 
@@ -413,6 +414,6 @@ export function footerTemplate(cmp, kind) {
   const b = esc(cmp.before.git?.shortHash || 'before');
   const a = esc(cmp.after.git?.shortHash || 'after');
   return `<div style="width:100%;padding:0 14mm;font:7.5pt -apple-system,Helvetica,Arial,sans-serif;color:#6b6a62;display:flex;justify-content:space-between">
-    <span>superset-frontend performance · ${b} → ${a} · ${kind === 'summary' ? 'summary' : 'detailed'}</span>
+    <span>${esc(TARGET_NAME)} performance · ${b} → ${a} · ${kind === 'summary' ? 'summary' : 'detailed'}</span>
     <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span></div>`;
 }

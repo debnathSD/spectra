@@ -46,10 +46,10 @@ export const formatMetric = (metric, value) =>
  * Directory tree of the profiled files, aggregated by `metric` and sorted
  * hottest first. Single-child directory chains are merged.
  */
-export function buildFileTree(files, metric, { hideVendor }) {
+export function buildFileTree(files, metric, { hideVendor, rootName = 'target-frontend' } = {}) {
   const root = {
     id: '',
-    name: 'superset-frontend',
+    name: rootName,
     isDir: true,
     children: [],
     parent: null,
@@ -146,7 +146,7 @@ export function decorateFileNode(node, tree, metric) {
     expandable: node.isDir && node.children.length > 0,
     heat,
     r: 4 + heat * 7,
-    tooltip: `${node.id || 'superset-frontend'}\n${metric.label}: ${formatMetric(metric, node.value)} (${tree.total ? Math.round((node.value / tree.total) * 100) : 0}% of total)`,
+    tooltip: `${node.id || tree.root.name}\n${metric.label}: ${formatMetric(metric, node.value)} (${tree.total ? Math.round((node.value / tree.total) * 100) : 0}% of total)`,
   };
 }
 

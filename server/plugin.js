@@ -19,7 +19,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { COMPARE_VERSION } from '../shared/compare.js';
-import { DEFAULT_TARGET_URL, FRONTEND_ROOT, SOURCE_ROOTS } from './config.js';
+import { DEFAULT_TARGET_URL, FRONTEND_ROOT, SOURCE_ROOTS, TARGET_NAME } from './config.js';
 import { gitInfo, isValidRev } from './git.js';
 import { pdfFileName, renderComparisonPdf } from './pdf/render.js';
 import {
@@ -121,6 +121,7 @@ export default function perfProfiler() {
             return send(res, 200, {
               ...(await session.status()),
               defaultUrl: DEFAULT_TARGET_URL,
+              defaultName: TARGET_NAME,
             });
           if (route === 'POST /record/stop') {
             const report = await session.stop();

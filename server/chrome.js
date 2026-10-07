@@ -32,7 +32,7 @@ export function findChrome() {
 
 /**
  * Starts a dedicated Chrome. Its profile lives in .chrome-profile/ so logins
- * (Superset SSO, cookies) survive between sessions, and it is separate from
+ * (session cookies) survive between sessions, and it is separate from
  * your everyday browser profile.
  */
 export async function launchChrome({ headless = false } = {}) {

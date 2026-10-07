@@ -1,6 +1,6 @@
-# superset-frontend performance profiler
+# Performance Profiler
 
-Find out **which file, which function and which React component** makes the Superset frontend slow.
+Find out **which file, which function and which React component** makes a frontend app slow.
 
 You point it at the app running in your browser, press **Record**, use the page, press **Stop** — and it gives you a
 ranked list of culprits, each with the exact function, file and line, the evidence, and a suggested fix. It drives a
@@ -30,7 +30,7 @@ re-renders and browser vitals.
 
 | Need | Details |
 | --- | --- |
-| **Node 18 or newer** | ⚠️ The Superset app itself pins **Node 16** (`superset-frontend/.nvmrc`), but this tool needs **Node 18+** (Vite 5, puppeteer-core). Use a separate terminal for it. With nvm: `nvm install 18 && nvm use` inside this folder (there is a `.nvmrc` here). |
+| **Node 18 or newer** | ⚠️ Some frontends may pin an older Node version; this tool needs **Node 18+** (Vite 5, puppeteer-core). Use a separate terminal for it. With nvm: `nvm install 18 && nvm use` inside this folder (there is a `.nvmrc` here). |
 | **Google Chrome** | Also works with Chromium or Microsoft Edge. Found automatically on macOS, Linux and Windows; otherwise set `CHROME_PATH` (see [Configuration](#configuration)). |
 | **The frontend running locally** | The webpack **development** server, normally <http://localhost:9000> with the Flask backend on 8088. See step 2 below. |
 | A login for that app | You will sign in once per launch — see [Signing in](#signing-in). |
@@ -42,9 +42,9 @@ re-renders and browser vitals.
 ## One-time setup
 
 ```bash
-cd superset-frontend/tools/perf-profiler
+cd performance-profiler
 nvm use            # or otherwise make sure `node -v` prints v18 or newer
-npm install        # standalone: it has its own package.json and is not part of the app's workspaces
+npm install        # standalone: it has its own package.json and is not part of any app
 npm test           # optional sanity check: should end with "# fail 0"
 ```
 
@@ -64,18 +64,18 @@ buttons, and you should see each bug named in **Culprits**.
 
 You need three things running. Use three terminals.
 
-**1. Backend** — however you normally start Superset locally (Flask on port 8088).
+**1. Backend** — however you normally start your backend locally (e.g. an API server).
 
-**2. Frontend dev server** (Node 16, in `superset-frontend/`):
+**2. Frontend dev server** (your app's dev server, usually running on a port like `9000`):
 
 ```bash
-cd superset-frontend
-npm run dev-server        # http://localhost:9000, proxies API calls to the backend
+# Run your app's dev server (example):
+npm run dev               # e.g. http://localhost:9000
 ```
 
 Wait until webpack finishes compiling; open <http://localhost:9000> in your normal browser once to confirm the app loads.
 
-**3. The profiler** (Node 18+, in `superset-frontend/tools/perf-profiler/`):
+**3. The profiler** (Node 18+, in this folder `performance-profiler/`):
 
 ```bash
 npm run dev               # http://localhost:5178   (PORT=5190 npm run dev to change the port)
@@ -90,7 +90,7 @@ Open <http://localhost:5178> in any browser. That page is the *control panel*; t
    - **Page to profile** — the page you want to measure, e.g. `http://localhost:9000/pages/custom/879/?edit=true`.
    - **Sign-in URL** *(optional but recommended for this repo)* — open **Advanced** and enter your app's login URL with
      `{url}` where the page goes. For this repo's local auth:
-     `http://localhost:9000/login/?browser=island&redirect={url}`. Details in [Signing in](#signing-in). It is
+    `http://localhost:9000/login/?redirect={url}`. Details in [Signing in](#signing-in). It is
      remembered next time. **Advanced** also holds **Headless** and **Attach to a running Chrome**.
 2. Click **Launch Chrome**. A new Chrome window opens, signs in and loads your page. Wait until the page has fully
    rendered. The session card now has two rows: the page (browser tab, URL, **Go**, **Reload**, a green
@@ -365,7 +365,7 @@ Runs headless, prints the top culprits (with their exact functions) and saves th
 ```bash
 # startup profile
 npm run profile -- --url http://localhost:9000/pages/custom/879/ --mode load \
-  --sign-in "http://localhost:9000/login/?browser=island&redirect={url}"
+  --sign-in "http://localhost:9000/login/?redirect={url}"
 
 # 15 s idle-interaction profile at 4x CPU slowdown
 npm run profile -- --url http://localhost:9000/ --duration 15 --throttle 4
@@ -387,9 +387,10 @@ Environment variables (all optional):
 | `PORT` | `5178` | Port of the profiler UI. |
 | `CHROME_PATH` | auto-detected | Chrome/Chromium/Edge executable. |
 | `PERF_TARGET_URL` | `http://localhost:9000/` | Pre-filled “Page to profile”. |
+| `PERF_TARGET_NAME` | inferred from the frontend's `package.json` or `PERF_TARGET_NAME` | Human-friendly name shown in the UI and PDFs. |
 | `PERF_CHROME_ARGS` | *(none)* | Extra Chrome flags, space separated. |
 | `PERF_CHROME_PROFILE_DIR` | `./.chrome-profile` | The tool's private Chrome profile. Use a different one to run the CLI while the UI's Chrome is open. |
-| `SUPERSET_FRONTEND_DIR` | `../..` (this repo's `superset-frontend`) | Root used to map files and show source. |
+| `PERF_FRONTEND_DIR` | `../..` (or an absolute path) | Root used to map files and show source. |
 
 Data on disk (both git-ignored): `reports/` (saved reports, plus optional `.trace.json` files) and `.chrome-profile/` (the tool's private Chrome profile).
 
@@ -758,7 +759,7 @@ severity: critical, then warning, then info), so the single most expensive, most
 
 - Everything runs locally. The UI server binds to `localhost`; **don't pass `--host`** unless you accept exposing your
   source tree and browser session to your network.
-- The API only reads files inside `superset-frontend/` (and the demo app) and refuses path traversal.
+-- The API only reads files inside the configured frontend root (and the demo app) and refuses path traversal.
 - No credential is ever entered into, stored by or written to a report by this tool. Reports contain performance data,
   file paths, function names and URLs (including query strings, which may contain IDs) — review a report before sharing it.
 - The **Page map screenshot** (`reports/<id>.page.jpg`) is a picture of the profiled page and can show whatever data

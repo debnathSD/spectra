@@ -40,7 +40,11 @@ export function FileHeatTree({
   const metric = FILE_METRICS.find(m => m.id === metricId);
 
   const tree = useMemo(
-    () => buildFileTree(report.files, metric, { hideVendor }),
+    () =>
+      buildFileTree(report.files, metric, {
+        hideVendor,
+        rootName: report?.meta?.title || report?.meta?.url || 'target-frontend',
+      }),
     [report, metric, hideVendor],
   );
   // A new tree (report, metric, filter) restarts from its hottest paths.
