@@ -8,7 +8,7 @@ import {
   packageOf,
 } from './analysis/sources.js';
 
-const ROOT = '/repo/superset-frontend';
+const ROOT = '/repo/target-frontend';
 
 test('normalizePath handles every bundler spelling', () => {
   assert.equal(
