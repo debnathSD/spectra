@@ -12,7 +12,7 @@ const ROOT = '/repo/target-frontend';
 
 test('normalizePath handles every bundler spelling', () => {
   assert.equal(
-    normalizePath('webpack://superset/./src/a/b.tsx?1a2b', ROOT),
+    normalizePath('webpack://target/./src/a/b.tsx?1a2b', ROOT),
     'src/a/b.tsx',
   );
   assert.equal(
@@ -31,8 +31,8 @@ test('normalizePath handles every bundler spelling', () => {
     'node_modules/lodash/lodash.js',
   );
   assert.equal(
-    normalizePath(`${ROOT}/packages/superset-ui-core/src/x.ts`, ROOT),
-    'packages/superset-ui-core/src/x.ts',
+    normalizePath(`${ROOT}/packages/example-lib/src/x.ts`, ROOT),
+    'packages/example-lib/src/x.ts',
   );
   assert.equal(normalizePath('./src/a.tsx + 3 modules', ROOT), 'src/a.tsx');
 });

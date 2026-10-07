@@ -1,8 +1,8 @@
 {
-  "name": "performance-profiler",
+  "name": "spectra",
   "version": "1.0.0",
   "private": true,
-  "description": "Chrome DevTools Protocol profiler that names the files, functions and React components behind frontend slowness.",
+  "description": "Spectra — a Chrome DevTools Protocol profiler that identifies files, functions and React components causing frontend slowness.",
   "type": "module",
   "scripts": {
     "dev": "vite",

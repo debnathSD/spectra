@@ -1,4 +1,4 @@
-# Performance Profiler
+# Spectra
 
 Find out **which file, which function and which React component** makes a frontend app slow.
 
@@ -48,7 +48,7 @@ npm install        # standalone: it has its own package.json and is not part of 
 npm test           # optional sanity check: should end with "# fail 0"
 ```
 
-Want to check the tool works before pointing it at Superset? Run the bundled demo app, which has deliberate performance
+Want to check the tool works before pointing it at your app? Run the bundled demo app, which has deliberate performance
 bugs (a 260 ms click handler, a memoised component that receives fresh props, a component that re-renders for nothing,
 layout thrashing, a layout shift):
 
@@ -119,17 +119,16 @@ when it closes — even though the tool keeps its profile in `.chrome-profile/`.
   already signed in it is not used. It also applies when you press **Go** in the toolbar.
 
   ```
-  http://localhost:9000/login/?browser=island&redirect={url}
+  http://localhost:9000/login/?redirect={url}
   ```
 
   `{url}` is replaced with the (URL-encoded) path and query of the page to profile. On the CLI: `--sign-in "…{url}"`.
 
 - **Sign in by hand** in the Chrome window after it opens, then continue.
 
-Why `?browser=island` here: the local login route (`superset/security/uam/manager.py`, `login()`) picks its token from
-that query parameter. Without it the route can't find a token and answers **HTTP 500 `{"message":"Internal error"}`** —
-that is the usual reason for a blank or failed first launch. The token stays in the backend; **the profiler never asks
-for, stores or logs a token or password**, and the Sign-in URL must not contain one.
+Why `?browser=island` here: some local login routes pick tokens from specific query parameters. Adjust the Sign-in URL
+for your app if it requires a special parameter. The token stays in the backend; **the profiler never asks for, stores or
+logs a token or password**, and the Sign-in URL must not contain one.
 
 If the page still answers with an HTTP error, the toolbar shows a red banner and the report starts with a critical
 **“The page itself failed to load”** finding, because a recording of an error page tells you nothing about your app.

@@ -8,7 +8,7 @@ export const TOOL_ROOT = path.resolve(here, '..');
 
 /** Frontend project root. Prefer `PERF_FRONTEND_DIR`, fall back to legacy var. */
 export const FRONTEND_ROOT = path.resolve(
-  process.env.PERF_FRONTEND_DIR || process.env.SUPERSET_FRONTEND_DIR || path.join(TOOL_ROOT, '../..'),
+  process.env.PERF_FRONTEND_DIR || process.env.FRONTEND_DIR || path.join(TOOL_ROOT, '../..'),
 );
 
 /** Where source files are looked up when showing a file (first match wins). */
@@ -37,4 +37,4 @@ try {
 }
 
 export const TARGET_NAME =
-  process.env.PERF_TARGET_NAME || process.env.SUPERSET_FRONTEND_NAME || inferredName;
+  process.env.PERF_TARGET_NAME || process.env.FRONTEND_NAME || inferredName;
