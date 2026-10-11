@@ -45,7 +45,7 @@ export async function launchChrome({ headless = false } = {}) {
   fs.mkdirSync(CHROME_PROFILE_DIR, { recursive: true });
   const options = {
     executablePath,
-    headless: headless ? 'new' : false,
+    headless: headless, // true = modern headless in puppeteer-core 23+
     userDataDir: CHROME_PROFILE_DIR,
     defaultViewport: null,
     ignoreDefaultArgs: ['--enable-automation'],
