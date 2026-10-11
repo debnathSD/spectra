@@ -20,6 +20,9 @@ export const api = {
   stop: () => request('POST', '/api/record/stop', {}),
   reports: () => request('GET', '/api/reports'),
   report: id => request('GET', `/api/reports/${encodeURIComponent(id)}`),
+  evaluations: () => request('GET', '/api/evaluations'),
+  evaluation: id =>
+    request('GET', `/api/evaluations/${encodeURIComponent(id)}`),
   saveTrace: id =>
     request('POST', `/api/reports/${encodeURIComponent(id)}/trace`, {}),
   gitCommit: rev =>

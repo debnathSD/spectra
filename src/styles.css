@@ -2384,3 +2384,95 @@ button.frow-head:hover:not(:disabled) {
     padding-left: 1rem;
   }
 }
+
+/* ---- golden-path evaluation matrix ---- */
+.eval-panel {
+  padding: 16px 20px 28px;
+  overflow: auto;
+}
+.eval-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.eval-summary {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.eval-target {
+  font-size: 13px;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+.eval-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+table.eval-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+table.eval-matrix th,
+table.eval-matrix td {
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+table.eval-matrix th {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: var(--label-tracking);
+  text-transform: var(--label-case);
+  color: var(--text-muted);
+  background: var(--surface);
+}
+table.eval-matrix td.num,
+table.eval-matrix th.num {
+  text-align: right;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+table.eval-matrix tr:last-child td {
+  border-bottom: none;
+}
+table.eval-matrix tr.row-fail td {
+  background: color-mix(in srgb, var(--poor) 8%, transparent);
+}
+.eval-path-title {
+  font-weight: 600;
+}
+.eval-path-error {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--poor);
+  font-family: var(--font-mono);
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.badge-pass {
+  background: color-mix(in srgb, var(--good) 20%, transparent);
+  color: var(--good);
+}
+.badge-fail {
+  background: color-mix(in srgb, var(--poor) 20%, transparent);
+  color: var(--poor);
+}
+.top-finding {
+  font-size: 12px;
+}
+.eval-foot {
+  margin-top: 12px;
+  font-size: 12px;
+}

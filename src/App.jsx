@@ -5,6 +5,7 @@ import { CallHeatTree, FileHeatTree } from './components/HeatTrees.jsx';
 import ComparePanel from './components/ComparePanel.jsx';
 import ControlBar from './components/ControlBar.jsx';
 import Culprits from './components/Culprits.jsx';
+import EvaluationPanel from './components/EvaluationPanel.jsx';
 import FilePanel from './components/FilePanel.jsx';
 import LongTasks from './components/LongTasks.jsx';
 import NetworkPanel from './components/NetworkPanel.jsx';
@@ -25,8 +26,12 @@ const TABS = [
   { id: 'react', label: 'React' },
   { id: 'tasks', label: 'Long tasks' },
   { id: 'network', label: 'Network & memory' },
+  { id: 'evaluation', label: 'Golden paths' },
   { id: 'compare', label: 'Compare commits' },
 ];
+
+/** Tabs that don't require a loaded report to be usable. */
+const REPORTLESS_TABS = new Set(['compare', 'evaluation']);
 
 function ReportPicker({ reports, current, onPick, onDelete }) {
   if (!reports.length)
@@ -128,6 +133,14 @@ export default function App() {
   const [revealTick, setRevealTick] = useState(0);
   const compare = useCompare();
   const [appearance, setAppearance] = useAppearance();
+  const [evaluations, setEvaluations] = useState([]);
+
+  useEffect(() => {
+    api
+      .evaluations()
+      .then(setEvaluations)
+      .catch(() => setEvaluations([]));
+  }, []);
 
   const openReport = useCallback(async id => {
     const data = await api.report(id);
@@ -163,6 +176,7 @@ export default function App() {
     report &&
     ['files', 'calls', 'react', 'culprits', 'tasks', 'page'].includes(tab);
   const inCompare = tab === 'compare';
+  const inEvaluation = tab === 'evaluation';
   return (
     <div className="app">
       <header className="topbar">
@@ -203,7 +217,7 @@ export default function App() {
         </div>
       )}
       <div className="workspace">
-        {report && !inCompare && (
+        {report && !inCompare && !inEvaluation && (
           <div className="report-bar">
             <span className="report-title" title={report.meta.url}>
               {report.meta.title || report.meta.url}
@@ -243,9 +257,9 @@ export default function App() {
                 type="button"
                 role="tab"
                 aria-selected={
-                  tab === t.id && (Boolean(report) || t.id === 'compare')
+                  tab === t.id && (Boolean(report) || REPORTLESS_TABS.has(t.id))
                 }
-                disabled={!report && t.id !== 'compare'}
+                disabled={!report && !REPORTLESS_TABS.has(t.id)}
                 onClick={() => setTab(t.id)}
               >
                 {t.label}
@@ -277,7 +291,17 @@ export default function App() {
             </div>
           </main>
         )}
-        {!inCompare && report && (
+        {inEvaluation && (
+          <main className="main">
+            <div className="content">
+              <EvaluationPanel
+                evaluations={evaluations}
+                onOpenReport={openReport}
+              />
+            </div>
+          </main>
+        )}
+        {!inCompare && !inEvaluation && report && (
           <main className="main">
             <div className="content">
               {tab === 'culprits' && (
@@ -328,7 +352,7 @@ export default function App() {
             )}
           </main>
         )}
-        {!inCompare && !report && (
+        {!inCompare && !inEvaluation && !report && (
           <Welcome onCompare={() => setTab('compare')} />
         )}
       </div>
