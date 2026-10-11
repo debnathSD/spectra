@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { detectFramework } from './framework.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,7 +18,8 @@ export const SOURCE_ROOTS = [
   path.join(TOOL_ROOT, 'fixtures/demo-app'),
 ];
 
-export const REPORTS_DIR = path.join(TOOL_ROOT, 'reports');
+export const REPORTS_DIR =
+  process.env.PERF_REPORTS_DIR || path.join(TOOL_ROOT, 'reports');
 export const CHROME_PROFILE_DIR =
   process.env.PERF_CHROME_PROFILE_DIR ||
   path.join(TOOL_ROOT, '.chrome-profile');
@@ -38,3 +40,7 @@ try {
 
 export const TARGET_NAME =
   process.env.PERF_TARGET_NAME || process.env.FRONTEND_NAME || inferredName;
+
+/** Detect framework/bundler info for the frontend root */
+export const FRAMEWORK = detectFramework(FRONTEND_ROOT);
+

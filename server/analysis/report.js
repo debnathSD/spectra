@@ -19,6 +19,16 @@ import {
   findMainThread,
 } from './trace.js';
 import { packageOf } from './sources.js';
+let getPerformanceCulprits;
+try {
+  // optional integration: require the installed spectra package if available
+  // use dynamic import to avoid hard dependency at startup
+  // eslint-disable-next-line no-undef
+  // @ts-ignore
+  getPerformanceCulprits = (await import('@progen-labs/spectra/core')).getPerformanceCulprits;
+} catch (e) {
+  getPerformanceCulprits = null;
+}
 
 const round = (n, d = 2) => Math.round(n * 10 ** d) / 10 ** d;
 const ms = us => us / 1000;
@@ -295,6 +305,20 @@ export async function buildReport({
     sourceIndex,
   );
 
+  // ----- Framework-agnostic summary (Vue/Svelte/Angular/Next) ----------------
+  function summarizeFramework(probe) {
+    if (!probe || !probe.framework) return { detected: false };
+    const f = probe.framework;
+    return {
+      detected: !!f.detected,
+      name: f.name || 'unknown',
+      version: f.version || '',
+      commitCount: probe.commitCount || 0,
+      components: f.components || [],
+    };
+  }
+  const frameworkReport = summarizeFramework(probe);
+
   // ----- vitals -----------------------------------------------------------
   const v = probe?.vitals;
   const tbtMs = realLongTasks.reduce((s, t) => s + (ms(t.durUs) - 50), 0);
@@ -310,6 +334,16 @@ export async function buildReport({
     probe?.resources || [],
     meta.mode === 'load' ? 0 : probe?.since || 0,
   );
+
+  // Augment report with culprits suggested by the external Spectra core SDK, if available.
+  let spectraCulprits = [];
+  try {
+    if (typeof getPerformanceCulprits === 'function') {
+      spectraCulprits = await getPerformanceCulprits({ limit: 10 });
+    }
+  } catch (err) {
+    // non-fatal: ignore SDK errors and continue building the report
+  }
 
   const report = {
     id: meta.id,
@@ -387,6 +421,8 @@ export async function buildReport({
     forcedReflows: aggregateForced(forcedReflows, sourceIndex),
     interactions,
     react: reactReport,
+    framework: frameworkReport,
+    spectra: { culprits: spectraCulprits },
     network,
     callTree: cpu
       ? buildCallTree(cpu, {

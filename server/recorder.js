@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { buildReport } from './analysis/report.js';
 import { SourceResolver } from './analysis/sources.js';
 import { attachChrome, launchChrome } from './chrome.js';
-import { FRONTEND_ROOT, REPORTS_DIR, SOURCE_ROOTS } from './config.js';
+import { FRONTEND_ROOT, REPORTS_DIR, SOURCE_ROOTS, FRAMEWORK } from './config.js';
 import { SourceIndex } from './analysis/locate.js';
 import { gitInfo } from './git.js';
 import { buildSignInUrl, looksSignedOut } from './signin.js';
@@ -165,6 +165,15 @@ export class PerfSession extends EventEmitter {
     await client.send('Debugger.enable');
     await client.send('Page.enable');
     await client.send('Performance.enable');
+    // Inject a small runtime hint so the in-page probe can adapt to the detected
+    // framework/bundler (react/vue/svelte/next) before the probe runs.
+    try {
+      await this.inject(`window.__SPECTRA_FRAMEWORK__ = ${JSON.stringify(
+        FRAMEWORK,
+      )};`);
+    } catch (e) {
+      // ignore injection errors
+    }
     await this.inject(PROBE_SOURCE);
     this.navigation = null;
     page.on('response', res => {

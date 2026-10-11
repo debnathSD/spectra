@@ -15,7 +15,7 @@ const REASON_LABELS = {
 
 function buildPins(report, hideVendor) {
   const { pageView } = report;
-  const byId = new Map(report.react.components.map(c => [c.id, c]));
+  const byId = new Map((report.react && report.react.components ? report.react.components : []).map(c => [c.id, c]));
   const viewArea = pageView.width * pageView.height;
   const candidates = [];
   for (const entry of pageView.entries) {

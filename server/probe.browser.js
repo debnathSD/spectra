@@ -13,6 +13,9 @@
  */
 (function () {
   if (window.__PERF_PROBE__) return;
+  // Runtime hint injected by the profiler: { framework, bundler, isSSR }
+  var SPECTRA_FRAMEWORK = typeof window.__SPECTRA_FRAMEWORK__ !== 'undefined' ? window.__SPECTRA_FRAMEWORK__ : null;
+  var WANT_REACT = !SPECTRA_FRAMEWORK || SPECTRA_FRAMEWORK.framework === 'react' || SPECTRA_FRAMEWORK.framework === 'unknown';
 
   var PERFORMED_WORK = 1;
   var TAG_FUNCTION = 0;
@@ -344,8 +347,7 @@
       onCommit(root);
       return originalCommit && originalCommit.apply(this, arguments);
     };
-    if (hook.renderers && hook.renderers.size)
-      probe.renderers = hook.renderers.size;
+    if (hook.renderers && hook.renderers.size) probe.renderers = hook.renderers.size;
   }
 
   // ------------------------------------------------------------ vitals
@@ -575,6 +577,113 @@
   };
 
   window.__PERF_PROBE__ = probe;
-  installHook();
+  // Only attempt to hook into React when the runtime hint allows it.
+  try {
+    if (WANT_REACT) installHook();
+  } catch (e) {
+    // Fail silently: probe should still collect vitals even if hooking fails.
+  }
+
+  // ------------------------------------------------ Framework fallbacks
+  // Provide lightweight probes for Vue, Svelte and Angular when React is not detected.
+  function installFrameworkProbes() {
+    var fw = SPECTRA_FRAMEWORK && SPECTRA_FRAMEWORK.framework ? SPECTRA_FRAMEWORK.framework : null;
+    if (!fw) return;
+
+    // Shared storage on probe for framework-specific summaries
+    probe.framework = probe.framework || {
+      name: fw,
+      detected: false,
+      version: '',
+      commits: [],
+      components: [],
+      commitCount: 0,
+    };
+
+    // MutationObserver-based heuristic for UI frameworks (Vue, Svelte): treat DOM updates as "commits".
+    try {
+      var mo = new MutationObserver(function (mutations) {
+        if (!probe.active) return;
+        var t = performance.now();
+        var rendered = 0;
+        var seen = new Set();
+        for (var m of mutations) {
+          rendered += (m.addedNodes && m.addedNodes.length) || 0;
+          // detect Vue component instances on added nodes (Vue 2: __vue__, Vue 3: __vueParentComponent)
+          var nodes = m.addedNodes || [];
+          for (var i = 0; i < nodes.length; i++) {
+            var n = nodes[i];
+            try {
+              if (n && n.__vue__) seen.add(n.__vue__);
+              if (n && n.__vueParentComponent) seen.add(n.__vueParentComponent);
+              // Svelte: look for nodes with attributes starting with 'data-svelte'
+              if (n && n.attributes) {
+                for (var j = 0; j < n.attributes.length; j++) {
+                  var an = n.attributes[j].name || '';
+                  if (an.indexOf('data-svelte') === 0) seen.add(an + (n.localName || ''));
+                }
+              }
+            } catch (e) {}
+          }
+        }
+        var commit = { t: t, dur: 0, rendered: rendered, components: seen.size };
+        probe.commits.push(commit);
+        probe.commitCount = (probe.commitCount || 0) + 1;
+        probe.framework.detected = true;
+        probe.framework.commitCount = probe.commitCount;
+      });
+      mo.observe(document, { childList: true, subtree: true });
+    } catch (e) {
+      // ignore
+    }
+
+    // Angular: if Zone.js is available, instrument Zone.run to measure change-detection durations
+    try {
+      if (fw === 'angular' && window.Zone && window.Zone.prototype && !window.__SPECTRA_ANGULAR_ZONE_PATCHED__) {
+        window.__SPECTRA_ANGULAR_ZONE_PATCHED__ = true;
+        var _origRun = window.Zone.prototype.run;
+        window.Zone.prototype.run = function () {
+          var start = performance.now();
+          try {
+            return _origRun.apply(this, arguments);
+          } finally {
+            try {
+              if (probe.active) {
+                var dur = performance.now() - start;
+                probe.commits.push({ t: start, dur: dur, rendered: 0, components: 0 });
+                probe.commitCount = (probe.commitCount || 0) + 1;
+                probe.framework.detected = true;
+                probe.framework.commitCount = probe.commitCount;
+                probe.framework.version = window.Zone.version || probe.framework.version;
+              }
+            } catch (e) {}
+          }
+        };
+      }
+    } catch (e) {}
+
+    // Next.js: treat as React unless React missing; try to detect Next router navigations for commits
+    try {
+      if (fw === 'next') {
+        // Next is usually React-based; provide basic navigational commit hints
+        if (window.next && window.next.router && window.next.router.events) {
+          var ev = window.next.router.events;
+          if (ev && ev.on) {
+            ev.on('routeChangeComplete', function () {
+              if (!probe.active) return;
+              var t = performance.now();
+              probe.commits.push({ t: t, dur: 0, rendered: 0, components: 0 });
+              probe.commitCount = (probe.commitCount || 0) + 1;
+              probe.framework.detected = true;
+            });
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  try {
+    if (!WANT_REACT) installFrameworkProbes();
+  } catch (e) {}
   installObservers();
 })();

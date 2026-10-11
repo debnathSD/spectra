@@ -88,7 +88,7 @@ function Detail({ c }) {
 export default function ReactPanel({ report, hideVendor, onOpenFile }) {
   const [sort, setSort] = useState({ id: 'selfMs', dir: -1 });
   const [open, setOpen] = useState(null);
-  const react = report.react;
+  const react = report.react || { detected: false, components: [] };
   const rows = useMemo(() => {
     const col = COLUMNS.find(c => c.id === sort.id);
     return react.components

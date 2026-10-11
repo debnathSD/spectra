@@ -31,7 +31,7 @@ const RATINGS = [
     label: 'Wasted React renders',
     get: r =>
       r.react.detected
-        ? r.react.components.reduce((s, c) => s + c.wasted, 0)
+          ? (r.react && r.react.components ? r.react.components.reduce((s, c) => s + c.wasted, 0) : 0)
         : null,
     limits: [20, 200],
     fmt: fmtNumber,

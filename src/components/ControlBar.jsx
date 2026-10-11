@@ -32,6 +32,14 @@ function ProbePill({ probe }) {
       </span>
     );
   }
+  // If a non-React framework was detected, show that instead of the reload hint
+  if (probe.framework && probe.framework.name) {
+    return (
+      <span className="pill ok" title={`Detected ${probe.framework.name}`}>
+        ✓ {probe.framework.name} {probe.framework.version || ''}
+      </span>
+    );
+  }
   return (
     <span
       className="pill warn"
@@ -311,7 +319,7 @@ export default function ControlBar({ status, run, isCompact }) {
         <button type="button" disabled={!idle} onClick={() => run(api.reload)}>
           Reload
         </button>
-        <ProbePill probe={status.probe} />
+            <ProbePill probe={status.probe} />
         <button
           type="button"
           className="ghost destructive"
