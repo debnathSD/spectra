@@ -38,25 +38,32 @@ Usage:
   spectra --version, -v           Print the version
 
 Run it from inside your project. With no --url, Spectra detects the framework,
-starts your dev server (npm run dev/start/serve), profiles it, then shuts it
-down. Reports are written to .spectra/reports in the current directory.
+starts your dev server (npm run dev/start/serve), evaluates it, then shuts it
+down. By default it records a baseline page load, auto-discovers the actionable
+elements, synthesizes golden-path journeys, runs them (safe actions only), and
+prints a performance matrix. Every path is saved as a report you can open in
+the dashboard. Reports go to .spectra/reports in the current directory.
 
 performance options:
-  --url <page>          Profile an already-running page; skips self-boot
+  --url <page>          Evaluate an already-running page; skips self-boot
+  --paths <n>           Max golden paths to run (default 12)
   --command "<cmd>"     Override the dev-server command (default: your npm dev script)
   --boot-timeout <s>    How long to wait for the dev server (default 60)
-  --mode live|load      Live session (default) or page-load recording
+  --headed              Show the browser window
+  --sign-in <url>       Sign-in URL template, e.g. "http://host/login/?redirect={url}"
+
+classic single-page profile (opt in with --mode or --scenario):
+  --mode live|load      Live session or page-load recording
   --duration <seconds>  Live recording length (default 8)
   --throttle <n>        CPU throttle multiplier (default 1)
   --scenario <file.mjs> Script a live session: export default async page => {…}
-  --headed              Show the browser window
   --save-trace          Keep the raw Chrome trace alongside the report
-  --sign-in <url>       Sign-in URL template, e.g. "http://host/login/?redirect={url}"
 
 Examples:
-  spectra performance                              # self-boot + profile
-  spectra performance --mode load                  # self-boot, page-load recording
-  spectra performance --url http://localhost:3000/ # profile a running server
+  spectra performance                              # self-boot + golden-path suite
+  spectra performance --paths 8                    # cap the suite at 8 journeys
+  spectra performance --url http://localhost:3000/ # evaluate a running server
+  spectra performance --mode load                  # classic single page-load profile
 `;
 
 function runNodeAsync(scriptRelPath, args, extraEnv = {}) {
@@ -108,12 +115,17 @@ async function runProfile() {
   }
   const env = projectEnv();
 
-  // An explicit --url means the server is already running: profile it directly.
+  // Golden-path evaluation is the default. --mode/--scenario opt into the
+  // classic single-page profile instead.
+  const classic = rest.includes('--mode') || rest.includes('--scenario');
+  const script = classic ? 'server/cli.js' : 'server/explore/evaluate-cli.js';
+
+  // An explicit --url means the server is already running: run against it.
   if (rest.includes('--url')) {
-    return runNodeAsync('server/cli.js', rest, env);
+    return runNodeAsync(script, rest, env);
   }
 
-  // No --url: self-boot the target project's own dev server, profile, stop.
+  // No --url: self-boot the target project's own dev server, run, stop.
   const cwd = process.cwd();
   const { value: command, rest: afterCmd } = takeOption(rest, 'command');
   const { value: bootTimeout, rest: profileArgs } = takeOption(afterCmd, 'boot-timeout');
@@ -141,7 +153,7 @@ async function runProfile() {
   let code = 1;
   try {
     code = await runNodeAsync(
-      'server/cli.js',
+      script,
       [...profileArgs, '--url', server.url],
       env,
     );

@@ -326,6 +326,7 @@ export class PerfSession extends EventEmitter {
       transferMode: 'ReturnAsStream',
       streamFormat: 'json',
     });
+    this.tracingActive = true;
     rec.startedAt = Date.now();
     this.setState('recording', { mode });
 
@@ -352,6 +353,13 @@ export class PerfSession extends EventEmitter {
   fail(err) {
     this.lastError = err.message;
     this.recording = null;
+    // A stop() that throws before Tracing.end leaves CDP tracing active, which
+    // would make the next start() fail with "Tracing has already been started".
+    // Tear it down so one bad recording can't poison the whole session.
+    if (this.tracingActive && this.client) {
+      this.tracingActive = false;
+      this.client.send('Tracing.end').catch(() => {});
+    }
     this.setState(this.browser ? 'idle' : 'disconnected', {
       error: err.message,
     });
@@ -379,6 +387,7 @@ export class PerfSession extends EventEmitter {
         client.once('Tracing.tracingComplete', resolve),
       );
       await client.send('Tracing.end');
+      this.tracingActive = false;
       const { stream } = await complete;
       const traceText = await readStream(client, stream);
       const parsed = JSON.parse(traceText);

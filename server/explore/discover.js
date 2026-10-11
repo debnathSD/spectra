@@ -105,6 +105,7 @@ function extractActionables() {
     return r.width > 0 && r.height > 0;
   }
 
+  const forms = Array.from(document.querySelectorAll('form'));
   const nodes = Array.from(document.querySelectorAll(SELECTOR));
   const out = [];
   for (const el of nodes) {
@@ -121,6 +122,7 @@ function extractActionables() {
       id: el.id || '',
       selector: selectorOf(el),
       inForm: !!form,
+      formIndex: form ? forms.indexOf(form) : -1,
       formMethod: form ? (form.getAttribute('method') || 'get') : '',
       formAction: form ? form.getAttribute('action') || '' : '',
       disabled: !!el.disabled,
