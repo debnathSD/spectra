@@ -10,6 +10,7 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { PerfSession, readReport } from './recorder.js';
+import { REPORTS_DIR } from './config.js';
 
 const args = process.argv.slice(2);
 const opt = (name, fallback) => {
@@ -79,7 +80,14 @@ try {
       );
     }
   }
-  console.log(`\nSaved reports/${report.id}.json — open it with: npm run dev`);
+  // When launched by the installed CLI the bin sets PERF_REPORTS_DIR; in a dev
+  // checkout it is unset. Tailor the "how to view it" hint to each.
+  const installed = !!process.env.PERF_REPORTS_DIR;
+  console.log(
+    `\nSaved ${path.join(REPORTS_DIR, report.id)}.json — view it with: ${
+      installed ? 'spectra dashboard' : 'npm run dev'
+    }`,
+  );
 } finally {
   await session.disconnect();
 }

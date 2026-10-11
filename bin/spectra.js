@@ -15,6 +15,8 @@ import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { bootDevServer } from '../server/explore/boot.js';
+import { detectFramework } from '../server/framework.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.resolve(here, '..');
@@ -35,8 +37,14 @@ Usage:
   spectra --help, -h              Show this help
   spectra --version, -v           Print the version
 
-performance options (passed through to the profiler):
-  --url <page>          Page to profile (e.g. http://localhost:3000/)
+Run it from inside your project. With no --url, Spectra detects the framework,
+starts your dev server (npm run dev/start/serve), profiles it, then shuts it
+down. Reports are written to .spectra/reports in the current directory.
+
+performance options:
+  --url <page>          Profile an already-running page; skips self-boot
+  --command "<cmd>"     Override the dev-server command (default: your npm dev script)
+  --boot-timeout <s>    How long to wait for the dev server (default 60)
   --mode live|load      Live session (default) or page-load recording
   --duration <seconds>  Live recording length (default 8)
   --throttle <n>        CPU throttle multiplier (default 1)
@@ -46,25 +54,34 @@ performance options (passed through to the profiler):
   --sign-in <url>       Sign-in URL template, e.g. "http://host/login/?redirect={url}"
 
 Examples:
-  spectra performance --url http://localhost:3000/ --mode load
-  spectra performance --url http://localhost:5173/ --duration 10 --throttle 4
+  spectra performance                              # self-boot + profile
+  spectra performance --mode load                  # self-boot, page-load recording
+  spectra performance --url http://localhost:3000/ # profile a running server
 `;
 
-function runNode(scriptRelPath, args, extraEnv = {}) {
-  const child = spawn(
-    process.execPath,
-    [path.join(PKG_ROOT, scriptRelPath), ...args],
-    {
-      cwd: PKG_ROOT,
-      stdio: 'inherit',
-      env: { ...process.env, ...extraEnv },
-    },
-  );
-  child.on('exit', code => process.exit(code ?? 0));
-  child.on('error', err => {
-    console.error(`spectra: failed to start — ${err.message}`);
-    process.exit(1);
+function runNodeAsync(scriptRelPath, args, extraEnv = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(
+      process.execPath,
+      [path.join(PKG_ROOT, scriptRelPath), ...args],
+      {
+        cwd: PKG_ROOT,
+        stdio: 'inherit',
+        env: { ...process.env, ...extraEnv },
+      },
+    );
+    child.on('exit', code => resolve(code ?? 0));
+    child.on('error', reject);
   });
+}
+
+/** Pull `--name value` out of an argv array, returning the value and the rest. */
+function takeOption(args, name) {
+  const i = args.indexOf(`--${name}`);
+  if (i === -1) return { value: undefined, rest: args };
+  const copy = args.slice();
+  const [, value] = copy.splice(i, 2);
+  return { value, rest: copy };
 }
 
 /**
@@ -84,12 +101,55 @@ function projectEnv() {
   return env;
 }
 
-function runProfile() {
+async function runProfile() {
   if (rest.includes('--help') || rest.includes('-h')) {
     console.log(HELP);
-    return;
+    return 0;
   }
-  runNode('server/cli.js', rest, projectEnv());
+  const env = projectEnv();
+
+  // An explicit --url means the server is already running: profile it directly.
+  if (rest.includes('--url')) {
+    return runNodeAsync('server/cli.js', rest, env);
+  }
+
+  // No --url: self-boot the target project's own dev server, profile, stop.
+  const cwd = process.cwd();
+  const { value: command, rest: afterCmd } = takeOption(rest, 'command');
+  const { value: bootTimeout, rest: profileArgs } = takeOption(afterCmd, 'boot-timeout');
+  const fw = detectFramework(cwd);
+  const label =
+    fw.framework !== 'unknown' ? `${fw.framework}/${fw.bundler}` : fw.bundler;
+  // Status goes to stderr so it never mixes with the report on stdout.
+  console.error(
+    `spectra: no --url given — starting the ${label} dev server in ${cwd} …`,
+  );
+
+  let server;
+  try {
+    server = await bootDevServer({
+      root: cwd,
+      command,
+      timeoutMs: bootTimeout ? Number(bootTimeout) * 1000 : 60_000,
+    });
+  } catch (err) {
+    console.error(`spectra: ${err.message}`);
+    return 1;
+  }
+  console.error(`spectra: dev server ready at ${server.url} — profiling …\n`);
+
+  let code = 1;
+  try {
+    code = await runNodeAsync(
+      'server/cli.js',
+      [...profileArgs, '--url', server.url],
+      env,
+    );
+  } finally {
+    await server.stop();
+    console.error('\nspectra: stopped the dev server.');
+  }
+  return code;
 }
 
 function runDashboard() {
@@ -110,7 +170,12 @@ function runDashboard() {
 switch (command) {
   case 'performance':
   case 'perf':
-    runProfile();
+    runProfile()
+      .then(code => process.exit(code ?? 0))
+      .catch(err => {
+        console.error(`spectra: ${err.message}`);
+        process.exit(1);
+      });
     break;
   case 'dashboard':
   case 'ui':

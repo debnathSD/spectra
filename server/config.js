@@ -1,5 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { detectFramework } from './framework.js';
 
@@ -20,9 +22,20 @@ export const SOURCE_ROOTS = [
 
 export const REPORTS_DIR =
   process.env.PERF_REPORTS_DIR || path.join(TOOL_ROOT, 'reports');
+
+/**
+ * Dedicated Chrome profile so logins survive between runs. Keyed per profiled
+ * project and kept in the OS temp dir — never inside the installed package
+ * (node_modules) or committed into the user's repo.
+ */
+const profileKey = crypto
+  .createHash('sha1')
+  .update(FRONTEND_ROOT)
+  .digest('hex')
+  .slice(0, 8);
 export const CHROME_PROFILE_DIR =
   process.env.PERF_CHROME_PROFILE_DIR ||
-  path.join(TOOL_ROOT, '.chrome-profile');
+  path.join(os.tmpdir(), 'spectra-chrome', `${path.basename(FRONTEND_ROOT)}-${profileKey}`);
 
 export const DEFAULT_TARGET_URL =
   process.env.PERF_TARGET_URL || 'http://localhost:3000/';
