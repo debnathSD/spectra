@@ -15,7 +15,11 @@
   if (window.__PERF_PROBE__) return;
   // Runtime hint injected by the profiler: { framework, bundler, isSSR }
   var SPECTRA_FRAMEWORK = typeof window.__SPECTRA_FRAMEWORK__ !== 'undefined' ? window.__SPECTRA_FRAMEWORK__ : null;
-  var WANT_REACT = !SPECTRA_FRAMEWORK || SPECTRA_FRAMEWORK.framework === 'react' || SPECTRA_FRAMEWORK.framework === 'unknown';
+  var WANT_REACT =
+    !SPECTRA_FRAMEWORK ||
+    SPECTRA_FRAMEWORK.framework === 'react' ||
+    SPECTRA_FRAMEWORK.framework === 'next' ||
+    SPECTRA_FRAMEWORK.framework === 'unknown';
 
   var PERFORMED_WORK = 1;
   var TAG_FUNCTION = 0;
@@ -521,9 +525,14 @@
   };
 
   probe.info = function () {
+    var fw =
+      probe.frameworkName ||
+      (probe.renderers > 0 ? 'react' : (SPECTRA_FRAMEWORK && SPECTRA_FRAMEWORK.framework) || '');
     return {
       react: probe.renderers > 0,
-      version: probe.reactVersion,
+      framework: fw,
+      detected: probe.renderers > 0 || !!probe.frameworkDetected,
+      version: probe.reactVersion || probe.frameworkVersion || '',
       active: probe.active,
       timings: probe.sawTimings,
     };
@@ -582,6 +591,134 @@
     if (WANT_REACT) installHook();
   } catch (e) {
     // Fail silently: probe should still collect vitals even if hooking fails.
+  }
+
+  // ------------------------------------------------ Vue adapter
+  // Uses Vue's devtools global hook (dev builds). component:added / :updated
+  // give per-component mount/update counts and names, and perf:start / perf:end
+  // give real per-component render time. Component source files come straight
+  // from the SFC compiler (type.__file), so no source-map step is needed.
+  function installVueAdapter() {
+    var vueIds = new Map();
+    var nextId = 0;
+    var perfStart = {};
+
+    function getStat(instance) {
+      if (!instance || !instance.type) return null;
+      var type = instance.type;
+      var id = vueIds.get(type);
+      if (id === undefined) {
+        id = nextId++;
+        vueIds.set(type, id);
+      }
+      var stat = probe.stats[id];
+      if (!stat) {
+        stat = probe.stats[id] = {
+          id: id,
+          name: type.__name || type.name || type.__file && baseName(type.__file) || 'Anonymous',
+          kind: 'vue',
+          renders: 0,
+          mounts: 0,
+          wasted: 0,
+          selfMs: 0,
+          totalMs: 0,
+          maxMs: 0,
+          reasons: { props: 0, state: 0, hooks: 0, context: 0, parent: 0 },
+          props: {},
+          parents: {},
+          file: type.__file || '',
+        };
+      }
+      return stat;
+    }
+
+    function baseName(p) {
+      var parts = String(p).split(/[\\/]/);
+      return parts[parts.length - 1].replace(/\.\w+$/, '');
+    }
+
+    function recordParent(stat, instance) {
+      var p = instance && instance.parent;
+      var name = p && p.type && (p.type.__name || p.type.name);
+      if (name) stat.parents[name] = (stat.parents[name] || 0) + 1;
+    }
+
+    function bumpCommit(dur) {
+      probe.commits.push({ t: performance.now(), dur: dur || 0, rendered: 1, wasted: 0 });
+      probe.commitCount = (probe.commitCount || 0) + 1;
+    }
+
+    function handle(evt, args) {
+      if (evt === 'app:init') {
+        probe.frameworkName = 'vue';
+        probe.frameworkDetected = true;
+        probe.frameworkVersion = args[1] || '';
+        return;
+      }
+      if (!probe.active) return;
+      if (evt === 'component:added') {
+        var stat = getStat(args[3]);
+        if (stat) {
+          stat.mounts++;
+          stat.renders++;
+          recordParent(stat, args[3]);
+          bumpCommit();
+        }
+        return;
+      }
+      if (evt === 'component:updated') {
+        var s2 = getStat(args[3]);
+        if (s2) {
+          s2.renders++;
+          recordParent(s2, args[3]);
+          bumpCommit();
+        }
+        return;
+      }
+      if (evt === 'perf:start' || evt === 'perf:end') {
+        var uid = args[1];
+        var inst = args[2];
+        var phase = args[3];
+        var time = args[4];
+        var key = uid + ':' + phase;
+        if (evt === 'perf:start') {
+          perfStart[key] = time;
+          return;
+        }
+        var start = perfStart[key];
+        if (start === undefined) return;
+        delete perfStart[key];
+        var dur = Math.max(0, time - start);
+        var st = getStat(inst);
+        if (!st) return;
+        if (phase === 'render') {
+          st.selfMs += dur;
+          st.totalMs += dur;
+          if (dur > st.maxMs) st.maxMs = dur;
+          probe.sawTimings = true;
+        } else if (phase === 'patch') {
+          st.totalMs += dur;
+        }
+      }
+    }
+
+    var existing = window.__VUE_DEVTOOLS_GLOBAL_HOOK__;
+    var hook = existing || {};
+    hook.enabled = true;
+    hook.apps = hook.apps || [];
+    hook.store = hook.store || {};
+    var prevEmit = typeof hook.emit === 'function' ? hook.emit.bind(hook) : null;
+    hook.on = hook.on || function () {};
+    hook.once = hook.once || function () {};
+    hook.off = hook.off || function () {};
+    hook.emit = function (evt) {
+      try {
+        handle(evt, Array.prototype.slice.call(arguments, 1));
+      } catch (e) {}
+      if (prevEmit) try { prevEmit.apply(null, arguments); } catch (e) {}
+    };
+    window.__VUE_DEVTOOLS_GLOBAL_HOOK__ = hook;
+    probe.frameworkName = 'vue';
   }
 
   // ------------------------------------------------ Framework fallbacks
@@ -683,7 +820,9 @@
   }
 
   try {
-    if (!WANT_REACT) installFrameworkProbes();
+    var fwHint = SPECTRA_FRAMEWORK && SPECTRA_FRAMEWORK.framework;
+    if (fwHint === 'vue') installVueAdapter();
+    else if (!WANT_REACT) installFrameworkProbes(); // svelte/angular: heuristic for now
   } catch (e) {}
   installObservers();
 })();

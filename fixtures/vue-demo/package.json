@@ -1,0 +1,10 @@
+{
+  "name": "spectra-vue-demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Minimal Vue 3 app with a deliberate perf problem, to validate Spectra's Vue adapter.",
+  "scripts": { "dev": "vite" },
+  "dependencies": { "vue": "^3.4.0" },
+  "devDependencies": { "@vitejs/plugin-vue": "^5.0.0", "vite": "^5.4.0" }
+}

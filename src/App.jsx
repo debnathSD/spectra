@@ -23,7 +23,7 @@ const TABS = [
   { id: 'page', label: 'Page map' },
   { id: 'files', label: 'File tree' },
   { id: 'calls', label: 'Call tree' },
-  { id: 'react', label: 'React' },
+  { id: 'react', label: 'Components' },
   { id: 'tasks', label: 'Long tasks' },
   { id: 'network', label: 'Network & memory' },
   { id: 'evaluation', label: 'Golden paths' },

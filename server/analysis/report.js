@@ -19,8 +19,21 @@ import {
   findMainThread,
 } from './trace.js';
 import { packageOf } from './sources.js';
+import path from 'node:path';
+import { FRONTEND_ROOT } from '../config.js';
 
 const round = (n, d = 2) => Math.round(n * 10 ** d) / 10 ** d;
+
+/** Turn an absolute component file (e.g. Vue SFC __file) into a project path. */
+function toProjectRelative(abs) {
+  try {
+    if (!abs || !path.isAbsolute(abs)) return abs || '';
+    const rel = path.relative(FRONTEND_ROOT, abs);
+    return rel.startsWith('..') ? abs : rel;
+  } catch {
+    return abs || '';
+  }
+}
 const ms = us => us / 1000;
 
 function newFile(path, vendor, pkg) {
@@ -635,6 +648,7 @@ function summarizeReact(
 ) {
   const empty = {
     detected: false,
+    framework: probe?.info?.framework || '',
     hasTimings: false,
     version: '',
     components: [],
@@ -642,12 +656,22 @@ function summarizeReact(
     slowCommits: [],
     commitSeries: [],
   };
-  if (!probe || !probe.info?.react) return empty;
+  if (!probe || !probe.info?.detected) return empty;
   const originMs = probe.since || 0;
   const components = probe.components
     .map(c => {
       let loc;
-      if (locations.has(c.id)) {
+      if (c.file) {
+        // Adapters that know the component's source file directly (e.g. Vue SFCs).
+        const rel = toProjectRelative(c.file);
+        loc = {
+          file: rel,
+          line: c.line || null,
+          vendor: /(^|\/)node_modules\//.test(rel),
+          pkg: null,
+          exact: false,
+        };
+      } else if (locations.has(c.id)) {
         const l = locations.get(c.id);
         const script = resolver.scripts.get(String(l.scriptId));
         loc = resolver.resolve(
@@ -722,6 +746,7 @@ function summarizeReact(
   const sorted = [...commits].sort((a, b) => b.dur - a.dur);
   return {
     detected: true,
+    framework: probe.info.framework || 'react',
     hasTimings: probe.info.timings,
     version: probe.info.version,
     components: components.slice(0, 600),

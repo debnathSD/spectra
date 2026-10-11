@@ -226,9 +226,28 @@ export function buildFindings(report) {
     });
   }
 
-  // ----- React ------------------------------------------------------------
+  // ----- Components (React / Vue / …) -------------------------------------
   const componentCulprit = (c, ms, note) =>
     culprit(c.name, c.file, c.line, c.lineKind, c.abs, ms, note);
+  const fw = react.framework || 'react';
+  const CAT =
+    fw === 'vue'
+      ? 'Vue'
+      : fw === 'svelte'
+        ? 'Svelte'
+        : fw === 'angular'
+          ? 'Angular'
+          : 'React';
+  const slowFix =
+    fw === 'vue'
+      ? 'Move expensive work into a computed property, use v-memo/v-once for static subtrees, and virtualise long lists.'
+      : fw === 'react' || fw === 'next'
+        ? 'Move expensive calculations into useMemo, virtualise long lists, and avoid deriving large data structures inside render.'
+        : 'Memoize expensive work, virtualise long lists, and avoid building large data structures during render.';
+  const frequentFix =
+    fw === 'vue'
+      ? 'Find the reactive dependency that changes this often (a ref/store/timer), narrow it, and use v-memo to skip unchanged subtrees.'
+      : 'Find what updates this often (a timer, a store subscription, a scroll handler) and throttle it or narrow the selector/subscription.';
   if (react.detected && react.hasTimings) {
     react.components
       .filter(c => c.wasted >= 5 && c.wasted / c.renders >= 0.3)
@@ -240,7 +259,7 @@ export function buildFindings(report) {
           id: `wasted-${c.name}-${c.file}`,
           severity:
             c.wastedMs >= 30 || c.wasted >= 100 ? 'critical' : 'warning',
-          category: 'React',
+          category: CAT,
           title: `${c.name} re-rendered ${c.renders}× — ${c.wasted} with nothing changed (${Math.round((c.wasted / c.renders) * 100)}%)`,
           detail:
             `${where(c.file, c.line)}. ${fmt(c.wastedMs)} spent on renders whose props, state and context were identical.` +
@@ -272,7 +291,7 @@ export function buildFindings(report) {
         add({
           id: `unstable-${c.name}-${p.prop}`,
           severity: 'warning',
-          category: 'React',
+          category: CAT,
           title: `${c.name} gets a new ${p.kind === 'function' ? 'function' : 'object'} for “${p.prop}” on every render (${p.count}×)`,
           detail: `${where(c.file, c.line)}. The value is recreated with ${p.kind === 'function' ? 'identical code' : 'identical contents'} but a new identity, which defeats React.memo and re-triggers effects that depend on it. Look at where ${c.topParent || 'the parent'} passes “${p.prop}”.`,
           file: c.file,
@@ -300,13 +319,13 @@ export function buildFindings(report) {
         add({
           id: `slow-component-${c.name}-${c.file}`,
           severity: c.selfMs >= 300 ? 'critical' : 'warning',
-          category: 'React',
+          category: CAT,
           title: `${c.name} is slow to render: ${fmt(c.selfMs)} total, ${fmt(c.selfMs / c.renders)} per render (${c.renders}×)`,
           detail: `${where(c.file, c.line)}. Self time excludes its children.`,
           file: c.file,
           culprits: [componentCulprit(c, c.selfMs, 'slow render')],
           impactMs: c.selfMs,
-          fix: 'Move expensive calculations into useMemo, virtualise long lists, and avoid deriving large data structures inside render.',
+          fix: slowFix,
         });
       });
     react.components
@@ -321,7 +340,7 @@ export function buildFindings(report) {
         add({
           id: `frequent-${c.name}-${c.file}`,
           severity: 'warning',
-          category: 'React',
+          category: CAT,
           title: `${c.name} rendered ${c.renders}× (${(c.renders / (report.meta.durationMs / 1000)).toFixed(0)}/s)`,
           detail: `${where(c.file, c.line)}. Reasons: ${
             Object.entries(c.reasons)
@@ -332,7 +351,7 @@ export function buildFindings(report) {
           file: c.file,
           culprits: [componentCulprit(c, c.selfMs, 'renders very often')],
           impactMs: c.selfMs,
-          fix: 'Find what updates this often (a timer, a store subscription, a scroll handler) and throttle it or narrow the selector/subscription.',
+          fix: frequentFix,
         });
       });
     react.slowCommits.slice(0, 3).forEach((c, i) => {
@@ -340,8 +359,8 @@ export function buildFindings(report) {
       add({
         id: `commit-${i}`,
         severity: c.dur >= 100 ? 'critical' : 'warning',
-        category: 'React',
-        title: `React commit took ${fmt(c.dur)} (${c.rendered} components rendered, ${c.wasted} wasted)`,
+        category: CAT,
+        title: `${CAT} commit took ${fmt(c.dur)} (${c.rendered} components rendered, ${c.wasted} wasted)`,
         detail: `At ${(c.tMs / 1000).toFixed(2)}s.`,
         culprits: react.components
           .slice(0, 3)
@@ -356,20 +375,20 @@ export function buildFindings(report) {
     add({
       id: 'react-prod',
       severity: 'info',
-      category: 'React',
-      title: 'React is a production build: render timings are unavailable',
+      category: CAT,
+      title: `${CAT} is a production build: render timings are unavailable`,
       detail:
         'Render counts and reasons are still collected where possible, but durations need a development or profiling build.',
-      fix: 'Profile against the dev server (npm run start / webpack-dev-server).',
+      fix: 'Profile against the dev server (npm run dev / start).',
     });
   } else if (!react.detected) {
     add({
       id: 'react-missing',
       severity: 'info',
-      category: 'React',
-      title: 'No React renderer was seen on this page',
+      category: CAT,
+      title: `No ${CAT === 'React' ? 'React renderer' : CAT + ' app'} was seen on this page`,
       detail:
-        'The probe must be installed before React loads. Use “Reload & record” (or Reload after connecting) so it is injected first.',
+        'The probe must be installed before the framework loads (use “Reload & record”), and component-level timings need a development build.',
       fix: 'Click “Record page load”, or reload the tab from this tool.',
     });
   }

@@ -101,14 +101,18 @@ export default function ReactPanel({ report, hideVendor, onOpenFile }) {
       );
   }, [react.components, sort, hideVendor]);
 
+  const fwLabel =
+    { vue: 'Vue', svelte: 'Svelte', angular: 'Angular', next: 'React' }[
+      react.framework
+    ] || 'React';
   if (!react.detected) {
     return (
       <div className="empty">
-        <h3>No React renderer was detected</h3>
+        <h3>No component framework was detected</h3>
         <p>
-          The probe has to be installed before React loads. Use{' '}
+          The probe has to be installed before the framework loads. Use{' '}
           <b>Record page load</b>, or reload the tab from this tool and record
-          again.
+          again. Component timings need a development build.
         </p>
       </div>
     );
@@ -116,7 +120,9 @@ export default function ReactPanel({ report, hideVendor, onOpenFile }) {
   return (
     <div className="react-panel">
       <div className="summary-row">
-        <span>React {react.version}</span>
+        <span>
+          {fwLabel} {react.version}
+        </span>
         <span>{fmtNumber(react.commits.count)} commits</span>
         <span>total render time {fmtMs(react.commits.totalMs)}</span>
         <span>slowest commit {fmtMs(react.commits.maxMs)}</span>
