@@ -19,16 +19,6 @@ import {
   findMainThread,
 } from './trace.js';
 import { packageOf } from './sources.js';
-let getPerformanceCulprits;
-try {
-  // optional integration: require the installed spectra package if available
-  // use dynamic import to avoid hard dependency at startup
-  // eslint-disable-next-line no-undef
-  // @ts-ignore
-  getPerformanceCulprits = (await import('@progen-labs/spectra/core')).getPerformanceCulprits;
-} catch (e) {
-  getPerformanceCulprits = null;
-}
 
 const round = (n, d = 2) => Math.round(n * 10 ** d) / 10 ** d;
 const ms = us => us / 1000;
@@ -335,16 +325,6 @@ export async function buildReport({
     meta.mode === 'load' ? 0 : probe?.since || 0,
   );
 
-  // Augment report with culprits suggested by the external Spectra core SDK, if available.
-  let spectraCulprits = [];
-  try {
-    if (typeof getPerformanceCulprits === 'function') {
-      spectraCulprits = await getPerformanceCulprits({ limit: 10 });
-    }
-  } catch (err) {
-    // non-fatal: ignore SDK errors and continue building the report
-  }
-
   const report = {
     id: meta.id,
     createdAt: meta.createdAt,
@@ -422,7 +402,6 @@ export async function buildReport({
     interactions,
     react: reactReport,
     framework: frameworkReport,
-    spectra: { culprits: spectraCulprits },
     network,
     callTree: cpu
       ? buildCallTree(cpu, {

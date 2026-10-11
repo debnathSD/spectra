@@ -16,6 +16,7 @@
     "server",
     "shared",
     "src",
+    "dist",
     "index.html",
     "vite.config.js",
     "README.md",
@@ -25,6 +26,7 @@
     "spectra": "node bin/spectra.js",
     "dev": "vite",
     "build": "vite build",
+    "prepack": "npm run build",
     "demo": "vite --config fixtures/demo-app/vite.config.js",
     "profile": "node server/cli.js",
     "test": "node --test \"server/**/test-*.js\""

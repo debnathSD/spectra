@@ -4,3 +4,4 @@ package-lock.json
 reports/
 .vite-demo/
 .spectra/
+dist/

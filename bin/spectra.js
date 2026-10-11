@@ -165,13 +165,18 @@ async function runProfile() {
 }
 
 function runDashboard() {
-  // Phase 1: reuse the existing Vite dev server. A standalone server that
-  // serves a prebuilt dashboard is coming in a later phase.
-  const child = spawn('npx', ['vite'], {
-    cwd: PKG_ROOT,
-    stdio: 'inherit',
-    env: { ...process.env, ...projectEnv() },
-  });
+  // Standalone server: serves the prebuilt dashboard and the backend API, so an
+  // installed Spectra needs no dev toolchain. projectEnv() points it at this
+  // project's reports and source roots.
+  const child = spawn(
+    process.execPath,
+    [path.join(PKG_ROOT, 'server/dashboard.js'), ...rest],
+    {
+      cwd: PKG_ROOT,
+      stdio: 'inherit',
+      env: { ...process.env, ...projectEnv() },
+    },
+  );
   child.on('exit', code => process.exit(code ?? 0));
   child.on('error', err => {
     console.error(`spectra: failed to start the dashboard — ${err.message}`);
