@@ -8,10 +8,11 @@ command and it starts your dev server, auto-discovers the actionable elements on
 of **golden-path journeys**, records each one, and reports a ranked list of culprits — each with the
 exact function, file and line, the evidence, and a suggested fix.
 
-Deep component-level attribution for **React, Next.js and Vue** (component names, source files, render
-counts and per-component render time). For **Svelte, Angular and any other build**, a source-mapped
-generic profile still pinpoints the slow files and functions. A [Progen Labs](https://github.com/progen-labs)
-project — open source, non-profit, no telemetry, no account required.
+Deep component-level attribution for **React, Next.js, Vue and Angular** (component names, render counts
+and per-component render/change-detection time; source files too, where the framework exposes them). For
+**Svelte and any other build**, a source-mapped generic profile still pinpoints the slow files and
+functions. A [Progen Labs](https://github.com/progen-labs) project — open source, non-profit, no
+telemetry, no account required.
 
 ## Install
 

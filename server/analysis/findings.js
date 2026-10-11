@@ -241,13 +241,17 @@ export function buildFindings(report) {
   const slowFix =
     fw === 'vue'
       ? 'Move expensive work into a computed property, use v-memo/v-once for static subtrees, and virtualise long lists.'
-      : fw === 'react' || fw === 'next'
-        ? 'Move expensive calculations into useMemo, virtualise long lists, and avoid deriving large data structures inside render.'
-        : 'Memoize expensive work, virtualise long lists, and avoid building large data structures during render.';
+      : fw === 'angular'
+        ? 'Avoid heavy work in template expressions and getters — move it to a memoized value or pure pipe — and use ChangeDetectionStrategy.OnPush.'
+        : fw === 'react' || fw === 'next'
+          ? 'Move expensive calculations into useMemo, virtualise long lists, and avoid deriving large data structures inside render.'
+          : 'Memoize expensive work, virtualise long lists, and avoid building large data structures during render.';
   const frequentFix =
     fw === 'vue'
       ? 'Find the reactive dependency that changes this often (a ref/store/timer), narrow it, and use v-memo to skip unchanged subtrees.'
-      : 'Find what updates this often (a timer, a store subscription, a scroll handler) and throttle it or narrow the selector/subscription.';
+      : fw === 'angular'
+        ? 'Reduce change-detection triggers: use OnPush, run timers/listeners with NgZone.runOutsideAngular, and avoid method/getter calls in templates.'
+        : 'Find what updates this often (a timer, a store subscription, a scroll handler) and throttle it or narrow the selector/subscription.';
   if (react.detected && react.hasTimings) {
     react.components
       .filter(c => c.wasted >= 5 && c.wasted / c.renders >= 0.3)

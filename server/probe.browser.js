@@ -721,6 +721,118 @@
     probe.frameworkName = 'vue';
   }
 
+  // ------------------------------------------------ Angular adapter
+  // Uses Angular's dev-mode framework profiler (window.ng.ɵsetProfiler, present
+  // when ngDevMode is on). Component change-detection fires paired start/end
+  // events (2/3) carrying the component instance; a nesting stack turns those
+  // into per-component render counts and self time (dur minus children), just
+  // like React/Vue. The ng global appears only after bootstrap, so we poll.
+  function installAngularAdapter() {
+    var ngIds = new Map();
+    var nextId = 100000; // keep clear of other adapters' id space
+    var stack = [];
+
+    function clean(n) {
+      return (n || '').replace(/^_+/, '');
+    }
+    function isComponent(instance) {
+      try {
+        var ctor = instance && instance.constructor;
+        if (!ctor) return false;
+        return !!ctor['ɵcmp'] || /Component$/.test(ctor.name || '');
+      } catch (e) {
+        return false;
+      }
+    }
+    function getStat(ctor, name) {
+      var id = ngIds.get(ctor);
+      if (id === undefined) {
+        id = nextId++;
+        ngIds.set(ctor, id);
+      }
+      var stat = probe.stats[id];
+      if (!stat) {
+        stat = probe.stats[id] = {
+          id: id,
+          name: name,
+          kind: 'angular',
+          renders: 0,
+          mounts: 0,
+          wasted: 0,
+          selfMs: 0,
+          totalMs: 0,
+          maxMs: 0,
+          reasons: { props: 0, state: 0, hooks: 0, context: 0, parent: 0 },
+          props: {},
+          parents: {},
+          file: '',
+        };
+      }
+      return stat;
+    }
+    function onEvent(event, instance) {
+      if (!probe.active) return;
+      if (event === 2) {
+        // Component change-detection start. Push a frame (null for non-component
+        // instances like structural-directive contexts) to keep the stack balanced.
+        if (!isComponent(instance)) {
+          stack.push(null);
+          return;
+        }
+        if (stack.length === 0) probe.commitCount = (probe.commitCount || 0) + 1;
+        stack.push({
+          ctor: instance.constructor,
+          name: clean(instance.constructor.name),
+          start: performance.now(),
+          child: 0,
+        });
+      } else if (event === 3) {
+        var f = stack.pop();
+        if (!f) return;
+        var dur = performance.now() - f.start;
+        var self = dur - f.child;
+        if (self < 0) self = 0;
+        for (var i = stack.length - 1; i >= 0; i--) {
+          if (stack[i]) {
+            stack[i].child += dur;
+            break;
+          }
+        }
+        var stat = getStat(f.ctor, f.name);
+        stat.renders++;
+        stat.selfMs += self;
+        stat.totalMs += dur;
+        if (self > stat.maxMs) stat.maxMs = self;
+        probe.sawTimings = true;
+      }
+    }
+    function register() {
+      try {
+        var ng = window.ng;
+        if (ng && typeof ng['ɵsetProfiler'] === 'function') {
+          ng['ɵsetProfiler'](function (event, instance) {
+            try {
+              onEvent(event, instance);
+            } catch (e) {}
+          });
+          probe.frameworkName = 'angular';
+          probe.frameworkDetected = true;
+          probe.frameworkVersion =
+            (window.ng && window.ng.ɵgetInjectorMetadata ? '' : '') || probe.frameworkVersion;
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+    if (!register()) {
+      var tries = 0;
+      var iv = setInterval(function () {
+        tries++;
+        if (register() || tries > 200) clearInterval(iv); // poll up to ~8s
+      }, 40);
+    }
+  }
+
   // ------------------------------------------------ Framework fallbacks
   // Provide lightweight probes for Vue, Svelte and Angular when React is not detected.
   function installFrameworkProbes() {
@@ -822,7 +934,8 @@
   try {
     var fwHint = SPECTRA_FRAMEWORK && SPECTRA_FRAMEWORK.framework;
     if (fwHint === 'vue') installVueAdapter();
-    else if (!WANT_REACT) installFrameworkProbes(); // svelte/angular: heuristic for now
+    else if (fwHint === 'angular') installAngularAdapter();
+    else if (!WANT_REACT) installFrameworkProbes(); // svelte: heuristic for now
   } catch (e) {}
   installObservers();
 })();
