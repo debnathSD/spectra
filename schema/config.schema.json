@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unpkg.com/@progen-labs/spectra/schema/config.schema.json",
+  "title": "spectra.config.json",
+  "description": "Project settings for Spectra, read from the project root (or --config).",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "budgets": {
+      "type": "object",
+      "description": "Upper limits. A run over any of them exits with code 2. Metrics a recording did not measure are skipped, never failed.",
+      "additionalProperties": false,
+      "properties": {
+        "tbtMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total blocking time (ms)"
+        },
+        "lcpMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Largest contentful paint (ms)"
+        },
+        "fcpMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "First contentful paint (ms)"
+        },
+        "cls": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Cumulative layout shift (score)"
+        },
+        "inpMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Interaction to next paint (ms)"
+        },
+        "ttfbMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Time to first byte (ms)"
+        },
+        "longTaskCount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Number of long tasks (> 50 ms)"
+        },
+        "maxLongTaskMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Longest task (ms)"
+        },
+        "scriptingMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "JavaScript scripting time (ms)"
+        },
+        "forcedLayoutCount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Forced synchronous layouts"
+        },
+        "domNodes": {
+          "type": "number",
+          "minimum": 0,
+          "description": "DOM nodes"
+        },
+        "heapUsedMb": {
+          "type": "number",
+          "minimum": 0,
+          "description": "JS heap used (MB)"
+        },
+        "transferKb": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Bytes transferred (KB)"
+        },
+        "criticalFindings": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Critical findings"
+        },
+        "findingCount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "All findings"
+        }
+      }
+    }
+  }
+}

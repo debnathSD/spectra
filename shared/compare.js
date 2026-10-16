@@ -84,6 +84,7 @@ export function formatValue(unit, v) {
   if (!finite(v)) return '–';
   switch (unit) {
     case 'ms':
+      if (v === 0) return '0 ms';
       if (v >= 1000) return `${(v / 1000).toFixed(2)} s`;
       if (v >= 100) return `${Math.round(v)} ms`;
       if (v >= 1) return `${v.toFixed(1)} ms`;

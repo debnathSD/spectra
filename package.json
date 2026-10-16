@@ -9,12 +9,15 @@
   "main": "server/recorder.js",
   "exports": {
     ".": "./server/recorder.js",
+    "./result": "./shared/result.js",
+    "./schema/*": "./schema/*",
     "./package.json": "./package.json"
   },
   "files": [
     "bin",
     "server",
     "shared",
+    "schema",
     "src",
     "dist",
     "index.html",
@@ -65,14 +68,14 @@
   },
   "dependencies": {
     "@jridgewell/trace-mapping": "^0.3.25",
-    "d3": "^7.9.0",
-    "highlight.js": "^11.10.0",
-    "puppeteer-core": "^25.13.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "puppeteer-core": "^25.13.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.2",
+    "d3": "^7.9.0",
+    "highlight.js": "^11.10.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "vite": "^8.3.4"
   }
 }

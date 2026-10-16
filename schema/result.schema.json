@@ -1,0 +1,749 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unpkg.com/@progen-labs/spectra/schema/result.schema.json",
+  "title": "Spectra result",
+  "description": "What `spectra … --json` prints and `--out` writes. A small envelope that points at the full reports on disk. Additive changes keep schemaVersion; breaking changes bump it.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "spectraVersion",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "enum": [
+        "profile",
+        "evaluation",
+        "compare",
+        "reports"
+      ]
+    },
+    "spectraVersion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "profile"
+          }
+        }
+      },
+      "then": {
+        "$ref": "#/$defs/profile"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "evaluation"
+          }
+        }
+      },
+      "then": {
+        "$ref": "#/$defs/evaluation"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "compare"
+          }
+        }
+      },
+      "then": {
+        "$ref": "#/$defs/compare"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "reports"
+          }
+        }
+      },
+      "then": {
+        "$ref": "#/$defs/reports"
+      }
+    }
+  ],
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "description": "Headline numbers; every one is lower-is-better. null when the recording did not measure it.",
+      "required": [
+        "tbtMs",
+        "lcpMs",
+        "fcpMs",
+        "cls",
+        "inpMs",
+        "ttfbMs",
+        "longTaskCount",
+        "maxLongTaskMs",
+        "scriptingMs",
+        "forcedLayoutCount",
+        "domNodes",
+        "heapUsedMb",
+        "transferKb",
+        "criticalFindings",
+        "findingCount"
+      ],
+      "properties": {
+        "tbtMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Total blocking time (ms)"
+        },
+        "lcpMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Largest contentful paint (ms)"
+        },
+        "fcpMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "First contentful paint (ms)"
+        },
+        "cls": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Cumulative layout shift (score)"
+        },
+        "inpMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Interaction to next paint (ms)"
+        },
+        "ttfbMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Time to first byte (ms)"
+        },
+        "longTaskCount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Number of long tasks (> 50 ms)"
+        },
+        "maxLongTaskMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Longest task (ms)"
+        },
+        "scriptingMs": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "JavaScript scripting time (ms)"
+        },
+        "forcedLayoutCount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Forced synchronous layouts"
+        },
+        "domNodes": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "DOM nodes"
+        },
+        "heapUsedMb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "JS heap used (MB)"
+        },
+        "transferKb": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Bytes transferred (KB)"
+        },
+        "criticalFindings": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Critical findings"
+        },
+        "findingCount": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "All findings"
+        }
+      }
+    },
+    "summaryWithRuns": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/summary"
+        }
+      ],
+      "properties": {
+        "runs": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "How many runs the medians are taken over."
+        }
+      },
+      "required": [
+        "runs"
+      ]
+    },
+    "culprit": {
+      "type": "object",
+      "required": [
+        "fn",
+        "file",
+        "line"
+      ],
+      "properties": {
+        "fn": {
+          "type": "string"
+        },
+        "file": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Path relative to the project root."
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "lineKind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "exact, or located (≈, found by searching the source)."
+        },
+        "abs": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Absolute path on the machine that recorded it."
+        },
+        "ms": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": [
+        "id",
+        "severity",
+        "category",
+        "title",
+        "impactMs",
+        "fix",
+        "culprits"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "warning",
+            "info"
+          ]
+        },
+        "category": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "impactMs": {
+          "type": "number"
+        },
+        "file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "fix": {
+          "type": "string"
+        },
+        "culprits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/culprit"
+          }
+        },
+        "seenIn": {
+          "type": "integer",
+          "description": "Profiles with several runs: how many runs reported this finding."
+        }
+      }
+    },
+    "budgets": {
+      "description": "Budget checks; null when no budgets are configured.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "required": [
+            "ok",
+            "failed",
+            "checks"
+          ],
+          "properties": {
+            "ok": {
+              "type": "boolean"
+            },
+            "failed": {
+              "type": "integer"
+            },
+            "checks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "key",
+                  "limit",
+                  "value",
+                  "where",
+                  "status"
+                ],
+                "properties": {
+                  "key": {
+                    "enum": [
+                      "tbtMs",
+                      "lcpMs",
+                      "fcpMs",
+                      "cls",
+                      "inpMs",
+                      "ttfbMs",
+                      "longTaskCount",
+                      "maxLongTaskMs",
+                      "scriptingMs",
+                      "forcedLayoutCount",
+                      "domNodes",
+                      "heapUsedMb",
+                      "transferKb",
+                      "criticalFindings",
+                      "findingCount"
+                    ]
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": "string"
+                  },
+                  "limit": {
+                    "type": "number"
+                  },
+                  "value": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "where": {
+                    "type": "string",
+                    "description": "median, or the journey title."
+                  },
+                  "status": {
+                    "enum": [
+                      "pass",
+                      "fail",
+                      "skipped"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "target",
+        "url",
+        "mode",
+        "runs",
+        "representativeRunId",
+        "summary",
+        "spread",
+        "findings",
+        "budgets"
+      ],
+      "properties": {
+        "target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "load",
+            "live",
+            null
+          ]
+        },
+        "cpuThrottle": {
+          "type": "number"
+        },
+        "git": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "runs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "file",
+              "summary"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "file": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The full report on disk."
+              },
+              "summary": {
+                "$ref": "#/$defs/summary"
+              }
+            }
+          }
+        },
+        "representativeRunId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The run closest to the medians; the findings come from it."
+        },
+        "summary": {
+          "$ref": "#/$defs/summaryWithRuns"
+        },
+        "spread": {
+          "type": "object",
+          "description": "min / max per metric across runs (several runs only).",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        },
+        "budgets": {
+          "$ref": "#/$defs/budgets"
+        }
+      }
+    },
+    "journey": {
+      "type": "object",
+      "required": [
+        "title",
+        "kind",
+        "ok",
+        "reportId",
+        "summary",
+        "findings"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reportId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reportFile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/summary"
+            }
+          ]
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          },
+          "description": "Top five findings of the journey."
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "required": [
+        "url",
+        "journeys",
+        "passed",
+        "total",
+        "budgets"
+      ],
+      "properties": {
+        "target": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": "string"
+        },
+        "file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "discovered": {
+          "type": "integer"
+        },
+        "skippedDestructive": {
+          "type": "array"
+        },
+        "passed": {
+          "type": "integer"
+        },
+        "total": {
+          "type": "integer"
+        },
+        "journeys": {
+          "type": "array",
+          "description": "The baseline page load first, then each golden path.",
+          "items": {
+            "$ref": "#/$defs/journey"
+          }
+        },
+        "budgets": {
+          "$ref": "#/$defs/budgets"
+        }
+      }
+    },
+    "compare": {
+      "type": "object",
+      "required": [
+        "comparison"
+      ],
+      "properties": {
+        "comparison": {
+          "type": "object",
+          "description": "The comparison from shared/compare.js (its own version field tracks that format).",
+          "required": [
+            "version",
+            "verdict",
+            "confidence",
+            "counts",
+            "headlines",
+            "metrics",
+            "findings",
+            "checks",
+            "before",
+            "after"
+          ],
+          "properties": {
+            "version": {
+              "type": "integer"
+            },
+            "verdict": {
+              "enum": [
+                "improved",
+                "regressed",
+                "mixed",
+                "neutral"
+              ]
+            },
+            "confidence": {
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ]
+            },
+            "metrics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "label",
+                  "unit",
+                  "key",
+                  "verdict",
+                  "before",
+                  "after",
+                  "delta",
+                  "pct"
+                ],
+                "properties": {
+                  "verdict": {
+                    "enum": [
+                      "improved",
+                      "degraded",
+                      "same",
+                      "n/a"
+                    ]
+                  },
+                  "key": {
+                    "type": "boolean",
+                    "description": "Counts toward the overall verdict."
+                  }
+                }
+              }
+            },
+            "findings": {
+              "type": "object",
+              "required": [
+                "added",
+                "resolved",
+                "persisting"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "reports": {
+      "type": "object",
+      "required": [
+        "reports"
+      ],
+      "properties": {
+        "dir": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "createdAt",
+              "url",
+              "mode",
+              "findings",
+              "critical"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

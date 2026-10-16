@@ -18,6 +18,7 @@ import { attachChrome, launchChrome } from './chrome.js';
 import { FRONTEND_ROOT, REPORTS_DIR, SOURCE_ROOTS, FRAMEWORK } from './config.js';
 import { SourceIndex } from './analysis/locate.js';
 import { gitInfo } from './git.js';
+import { REPORT_SCHEMA_VERSION } from '../shared/result.js';
 import { buildSignInUrl, looksSignedOut } from './signin.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -417,7 +418,7 @@ export class PerfSession extends EventEmitter {
           .toISOString()
           .replace(/[-:]/g, '')
           .replace(/\..+/, '') + `-${rec.mode}`;
-      const report = await buildReport({
+      const built = await buildReport({
         events,
         probe,
         metrics: { before: rec.metricsBefore, after: metricsAfter, dom },
@@ -438,6 +439,8 @@ export class PerfSession extends EventEmitter {
           navUrl: this.navigation?.url ?? '',
         },
       });
+      // versioned so editors, CI and agents can tell which format they read
+      const report = { schemaVersion: REPORT_SCHEMA_VERSION, ...built };
       this.lastTrace = { id: report.id, text: traceText };
       report.pageView = pageView
         ? { ...pageView.layout, hasImage: true }
