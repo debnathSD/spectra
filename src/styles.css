@@ -656,14 +656,23 @@ label.switch {
 }
 .main-tabs {
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 0.4rem;
+  overflow-x: visible;
   padding: 0.5rem 0.9rem;
   border-bottom: 1px solid var(--border);
 }
+/* Wrap rather than scroll: a scrolled-away tab (Compare commits, on a laptop
+   screen) is a tab nobody finds, since overlay scrollbars stay hidden. */
 .main-tabs .tab-list {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.2rem;
   min-width: 0;
-  overflow-x: auto;
+}
+.main-tabs label.switch {
+  white-space: nowrap;
+  margin-left: auto;
 }
 .tabs button {
   background: transparent;
@@ -1188,7 +1197,8 @@ tr.detail td {
 }
 .task-cols {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, …): a long file path must not push its column out of the card */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1rem;
 }
 .task-cols h4 {
@@ -1198,15 +1208,22 @@ tr.detail td {
   letter-spacing: 0.04em;
   color: var(--text-2);
 }
-.row {
+.row,
+button.link.row {
   display: flex;
   justify-content: space-between;
   gap: 0.6rem;
   width: 100%;
+  text-align: left;
 }
 .row span {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row b {
+  flex: none;
   white-space: nowrap;
 }
 

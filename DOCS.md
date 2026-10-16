@@ -7,6 +7,21 @@ ranked list of culprits, each with the exact function, file and line, the eviden
 real Chrome through the Chrome DevTools Protocol (tracing + CPU sampling) and adds a small in-page probe for React
 re-renders and browser vitals.
 
+> **The full guide**, with annotated screenshots of every screen, is on the Progen Labs website:
+> <https://progen-labs.github.io/website/#spectra/docs/introduction>. This file is the in-repo manual, the technical
+> deep dive and the contributor guide.
+
+**Two ways to run it.** The dashboard walkthrough below uses the commands of a checkout of this repository; with the
+installed package, use `npx spectra dashboard` wherever it says `npm run dev`. Everything else is the same.
+
+| | Installed in your project | From a checkout of this repository |
+| --- | --- | --- |
+| Install | `npm install --save-dev @progen-labs/spectra` | `npm install` in this folder |
+| Profile from the terminal | `npx spectra performance` (golden paths), `npx spectra performance --quick` | `npm run profile -- --url … --mode load` |
+| Compare, list reports | `npx spectra compare …`, `npx spectra reports` | `node bin/spectra.js compare …` |
+| Dashboard | `npx spectra dashboard` → <http://127.0.0.1:4321> | `npm run dev` → <http://localhost:5178> |
+| Reports are saved in | `.spectra/reports/` in your project | `reports/` in this folder |
+
 - [Requirements](#requirements)
 - [One-time setup](#one-time-setup)
 - [Every time you profile](#every-time-you-profile)
@@ -30,7 +45,7 @@ re-renders and browser vitals.
 
 | Need | Details |
 | --- | --- |
-| **Node 18 or newer** | ⚠️ Some frontends may pin an older Node version; this tool needs **Node 18+** (Vite 5, puppeteer-core). Use a separate terminal for it. With nvm: `nvm install 18 && nvm use` inside this folder (there is a `.nvmrc` here). |
+| **Node 18 or newer** | ⚠️ Some frontends may pin an older Node version; this tool needs **Node 18+**. Use a separate terminal for it if needed. With nvm: `nvm install 18 && nvm use 18`. |
 | **Google Chrome** | Also works with Chromium or Microsoft Edge. Found automatically on macOS, Linux and Windows; otherwise set `CHROME_PATH` (see [Configuration](#configuration)). |
 | **The frontend running locally** | The frontend development server (your app's dev server), e.g. `http://localhost:3000` or any host/port your app uses. See step 2 below. |
 | A login for that app (optional) | If your app requires sign-in, you will sign in once per launch — see [Signing in](#signing-in). |
@@ -43,7 +58,7 @@ re-renders and browser vitals.
 
 ```bash
 cd performance-profiler
-nvm use            # or otherwise make sure `node -v` prints v18 or newer
+nvm use 18         # or otherwise make sure `node -v` prints v18 or newer
 npm install        # standalone: it has its own package.json and is not part of any app
 npm test           # optional sanity check: should end with "# fail 0"
 ```
@@ -111,7 +126,8 @@ compare before and after a fix. **Delete** removes the selected one.
 ## Signing in
 
 The Chrome window starts **signed out every time**. Apps normally use *session* cookies, and Chrome throws those away
-when it closes — even though the tool keeps its profile in `.chrome-profile/`. Choose one of:
+when it closes — even though the tool keeps its own Chrome profile (in your temp directory, under `spectra-chrome/`).
+Choose one of:
 
 - **Sign-in URL (optional, when required).** Enter it once next to *Page to profile* only if the page requires signing in.
   The tool opens your page directly; if it lands on a login screen the Sign-in URL is used to sign in and continue to the page. If you are already signed in it is not used. It also applies when you press **Go** in the toolbar.
@@ -239,7 +255,9 @@ or a detailed report).
 4. Open the **Compare commits** tab. Upload the base snapshots on the **Before** side and the PR snapshots on the **After**
    side (drag and drop, or *Upload snapshot(s)*; several files at once is fine). If a file carries no commit information the
    hash is read from its file name and the author is looked up for you. Reports recorded on this machine can also be added
-   straight from the drop-down, so the CLI (`npm run profile …`) works for repeatable runs without any snapshot step.
+   straight from the drop-down, so CLI runs (`spectra performance --quick --runs 3`, or `npm run profile …` in a checkout)
+   need no snapshot step. From the terminal, [`spectra compare`](#several-runs-medians-and-compare) gives the same
+   verdict without the dashboard.
 5. Read the verdict, then press **PDF summary** (for the PR description) or **PDF detailed report** (for the record).
 
 > Why snapshots and not raw traces? A raw Chrome trace has no React data and no source-file attribution; the profiler
@@ -323,8 +341,8 @@ an icon (✓ ✕ =) and a word.
   app (it says so in the report's notes).
 - A **memory leak** shows as steady *JS heap growth* over repeated actions: run the same action several times in one recording.
 - **Want Chrome's own Performance panel too?** Click **Trace for Chrome DevTools** in the report bar above the tabs, then in
-  Chrome open DevTools → **Performance** → **Load profile…** (the ↑ icon) and pick `reports/<id>.trace.json`. Note that the
-  report itself (`reports/<id>.json`) is this tool's own format and **cannot** be loaded into DevTools — only the raw
+  Chrome open DevTools → **Performance** → **Load profile…** (the ↑ icon) and pick `<id>.trace.json` from the reports folder. Note that the
+  report itself (`<id>.json`) is this tool's own format and **cannot** be loaded into DevTools — only the raw
   trace can. The trace of the **most recent recording** is kept in memory so the button always works right after
   recording; for older reports it only works if **save raw trace** was ticked before recording.
 
@@ -332,7 +350,7 @@ an icon (✓ ✕ =) and a word.
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `npm install` / `npm run dev` fails with syntax or engine errors | You are on Node 16 (the app's version). Switch this terminal to Node 18+ (`nvm use` in this folder). |
+| `npm install` / `npm run dev` / `npx spectra` fails with syntax or engine errors | Your Node is older than 18. Switch this terminal to Node 18+ (`nvm use 18`). |
 | **“Chrome was not found”** | Set `CHROME_PATH` to the executable, e.g. `CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run dev`. |
 | Chrome opens on `{"message":"Internal error"}` at `/login/?next=…` | The login route may require a special query parameter (see [Signing in](#signing-in)). Fill in the **Sign-in URL**, close Chrome and launch again. |
 | Red banner “The page answered HTTP 4xx/5xx” | The page failed to load — usually not signed in, or the backend/dev server is down. Check <http://localhost:3000> in a normal browser. |
@@ -343,8 +361,10 @@ an icon (✓ ✕ =) and a word.
 | Lines show `≈` | Expected for webpack dev bundles (no source maps): the line is located by function name. |
 | “Analysing…” takes very long or fails on a huge trace | Record for less time; close other heavy tabs; avoid CPU 6× on very long sessions. |
 | **Attach** can't connect | Start Chrome yourself with `--remote-debugging-port=9222 --user-data-dir=/tmp/perf-chrome` (recent Chrome refuses the debugging port on your *default* profile) and use `http://127.0.0.1:9222`. |
-| Port 5178 is in use | `PORT=5190 npm run dev`. |
-| “Chrome could not start because another Chrome is already using the profile…” | The UI's Chrome window (or another CLI run) holds `.chrome-profile/`. Click **Close Chrome** in the UI first, or run the second one with its own profile: `PERF_CHROME_PROFILE_DIR=/tmp/perf-chrome-2 npm run profile -- …`. |
+| The dashboard's port is in use | `npx spectra dashboard --port 5000` (installed) or `PORT=5190 npm run dev` (checkout). |
+| “Chrome could not start because another Chrome is already using the profile…” | The dashboard's Chrome window (or another CLI run) holds Spectra's private profile. Click **Close Chrome** in the dashboard first, or give the second run its own profile: `PERF_CHROME_PROFILE_DIR=/tmp/spectra-2 npx spectra performance …`. |
+| `spectra compare`: “… is a golden-path evaluation” | Compare single-page profiles: `spectra performance --quick --runs 5 --out before.json` (and again for `after.json`), or two journey reports by id. |
+| A command exits with code `2` | It ran, but a budget in `spectra.config.json` was exceeded, or `compare --fail-on-regression` found a regression. The tables printed above the exit say which. |
 | Compare: “This is a raw Chrome trace” | You uploaded a `.trace.json`. Comparison needs the profiler **report**: open it and use **Snapshot for comparison** (the trace has no React or source-file data). |
 | Compare: “No commit … in this repository” | The hash is not in your local clone. `git fetch` the PR branch first, then press **Look up** again. |
 | Compare: “Chrome was not found” when saving a PDF | PDFs are printed by headless Chrome. Set `CHROME_PATH` (see Configuration). |
@@ -357,39 +377,81 @@ message returned to the UI.
 
 ## Command line (CI and scripted scenarios)
 
-Runs headless, prints the top culprits (with their exact functions) and saves the same report the UI shows.
+Everything runs headless, prints the culprits (with their exact functions) and saves the same reports the dashboard
+shows. Installed in a project:
 
-  ```bash
-# startup profile
-npm run profile -- --url http://localhost:3000/path/to/page/ --mode load \
-  --sign-in "http://localhost:3000/login/?redirect={url}"
+```bash
+# golden-path suite: self-boots your dev server, discovers journeys and runs them safely
+npx spectra performance
 
-# 15 s idle-interaction profile at 4x CPU slowdown
-npm run profile -- --url http://localhost:3000/ --duration 15 --throttle 4
+# single-page profiles: the fast loop
+npx spectra performance --quick                              # one page-load profile
+npx spectra performance --quick --runs 5 --out before.json   # median of 5 runs, saved as a result file
+npx spectra performance --url http://localhost:3000/ --mode live --duration 15 --throttle 4
+npx spectra performance --url http://localhost:3000/ --scenario ./my-scenario.mjs --runs 3
 
-# scripted scenario: the module default-exports async page => { … } (a puppeteer Page)
-npm run profile -- --url http://localhost:3000/ --scenario ./my-scenario.mjs
+# did a change help?
+npx spectra compare before.json after.json --fail-on-regression
 
-# other flags: --headed (watch it run), --save-trace (also keep the raw trace)
+# saved reports, newest first
+npx spectra reports
 ```
 
-The headless browser starts signed out too, so pass `--sign-in` for pages that need a login.
+A scenario module default-exports `async page => { … }` (a Puppeteer `Page`). The recording lasts as long as the
+scenario runs, and with `--runs` the page is reloaded before every run. Other flags: `--headed` (watch it run),
+`--save-trace` (keep the raw trace) and `--sign-in "…{url}"` (the headless browser starts signed out too). In a
+checkout of this repository, `npm run profile -- --url … [options]` runs the same single-page profiler.
+`npx spectra --help` lists every option.
+
+### Several runs, medians and compare
+
+`--runs N` records N times in one browser and reports the median of each headline number, its spread, and how many
+runs saw each finding; the findings come from the run closest to the medians. `spectra compare` takes, on each side, a
+`--out` result file, a report id, a report file or comma-joined ids, and uses the same engine as the dashboard's
+Compare commits tab (see [How a change is decided](#how-a-change-is-decided)).
+
+### Budgets and exit codes
+
+`spectra.config.json` in the project root (or the file given with `--config`) sets upper limits:
+
+```json
+{ "budgets": { "tbtMs": 200, "lcpMs": 2500, "cls": 0.1, "criticalFindings": 0 } }
+```
+
+They are checked against the median of a single-page profile, or against every journey of the golden-path suite;
+metrics a recording did not measure are skipped, never failed. Available budgets: `tbtMs`, `lcpMs`, `fcpMs`, `cls`,
+`inpMs`, `ttfbMs`, `longTaskCount`, `maxLongTaskMs`, `scriptingMs`, `forcedLayoutCount`, `domNodes`, `heapUsedMb`,
+`transferKb`, `criticalFindings`, `findingCount`. An unknown name is an error, so a typo can't pass silently.
+
+Exit codes: `0` done (and within budget), `1` could not run, `2` over budget or, with `--fail-on-regression`, a
+regression.
+
+### JSON output
+
+`--json` prints a versioned result on stdout (`schemaVersion`, and a `kind` of `profile`, `evaluation`, `compare` or
+`reports`) and moves every human-readable line to stderr; `--out <file>` writes the same result to a file. Results
+point at the reports on disk instead of embedding them. The JSON Schemas ship in `schema/` (`result.schema.json`,
+`config.schema.json`), and the builders are exported as `@progen-labs/spectra/result` (`shared/result.js`). Saved
+reports carry their own `schemaVersion`; additive changes keep it, breaking changes bump it.
 
 ## Configuration
 
-Environment variables (all optional):
+Budgets live in `spectra.config.json` (see [Budgets and exit codes](#budgets-and-exit-codes)). Environment variables,
+all optional:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `PORT` | `5178` | Port of the profiler UI. |
 | `CHROME_PATH` | auto-detected | Chrome/Chromium/Edge executable. |
-| `PERF_TARGET_URL` | `http://localhost:3000/` | Pre-filled “Page to profile”. |
-| `PERF_TARGET_NAME` | inferred from the frontend's `package.json` or `PERF_TARGET_NAME` | Human-friendly name shown in the UI and PDFs. |
 | `PERF_CHROME_ARGS` | *(none)* | Extra Chrome flags, space separated. |
-| `PERF_CHROME_PROFILE_DIR` | `./.chrome-profile` | The tool's private Chrome profile. Use a different one to run the CLI while the UI's Chrome is open. |
-| `PERF_FRONTEND_DIR` | `../..` (or an absolute path) | Root used to map files and show source. |
+| `PERF_CHROME_PROFILE_DIR` | `<temp dir>/spectra-chrome/<project>-<hash>` | The tool's private Chrome profile, one per profiled project. Use a different one to run the CLI while the dashboard's Chrome is open. |
+| `PERF_FRONTEND_DIR` | the current directory (installed), `../..` (checkout) | Root used to map files, show source and find `spectra.config.json`. |
+| `PERF_REPORTS_DIR` | `.spectra/reports` (installed), `reports/` (checkout) | Where reports are saved and read. |
+| `PERF_TARGET_URL` | `http://localhost:3000/` | Pre-filled “Page to profile”. |
+| `PERF_TARGET_NAME` | the frontend's `package.json` name | Human-friendly name shown in the UI and PDFs. |
+| `PORT` | `4321` (`spectra dashboard`), `5178` (`npm run dev`) | Port of the dashboard. |
 
-Data on disk (both git-ignored): `reports/` (saved reports, plus optional `.trace.json` files) and `.chrome-profile/` (the tool's private Chrome profile).
+Data on disk, all git-ignored: the reports folder (reports, page screenshots, optional `.trace.json` files and
+golden-path summaries) and Spectra's private Chrome profile in your temp directory.
 
 ## How it works and how accurate it is
 
@@ -759,42 +821,66 @@ severity: critical, then warning, then info), so the single most expensive, most
 -- The API only reads files inside the configured frontend root (and the demo app) and refuses path traversal.
 - No credential is ever entered into, stored by or written to a report by this tool. Reports contain performance data,
   file paths, function names and URLs (including query strings, which may contain IDs) — review a report before sharing it.
-- The **Page map screenshot** (`reports/<id>.page.jpg`) is a picture of the profiled page and can show whatever data
+- The **Page map screenshot** (`<id>.page.jpg` in the reports folder) is a picture of the profiled page and can show whatever data
   was on screen (names, numbers, customer data). Reports are git-ignored, but treat the image like the report: review it
   before sharing, and **Delete** removes it together with the report.
-- The tool's Chrome profile (`.chrome-profile/`) can contain cookies for the app after you sign in; it is git-ignored.
+- The tool's private Chrome profile (in your temp directory, under `spectra-chrome/`) can contain cookies for the app
+  after you sign in. It is separate from your own Chrome profile and never inside your repository.
+- `spectra dashboard` listens on `127.0.0.1` only.
 
 ## Project layout and contributing
 
 ```
-server/probe.browser.js    in-page probe (React hook + vitals + component screen positions), injected before the app loads
+bin/spectra.js             the CLI: performance, compare, reports, dashboard
+server/probe.browser.js    in-page probe (React / Vue / Angular hooks + vitals + component screen positions), injected before the app loads
 server/chrome.js           find / launch / attach Chrome
 server/recorder.js         CDP orchestration: start/stop, trace stream, metrics, sign-in, component locations
 server/signin.js           Sign-in URL template + "signed out?" detection
 server/git.js              commit / author lookup (name only, never the email)
 server/pdf/                comparison PDF: print-ready HTML (template.js) + headless-Chrome printing (render.js)
-shared/compare.js          the diff engine; used by BOTH the Compare tab and the PDF, so they always agree
-shared/snapshot.js         snapshot file naming, validation, commit-from-filename
 server/analysis/           trace.js · cpu.js · sources.js · locate.js · report.js · findings.js
-server/plugin.js           Vite plugin: /api/* endpoints + Server-Sent Events
-server/cli.js              headless runner
-src/                       React + d3 UI (App, components/, hooks/, heat.js, layout.js)
+server/explore/            dev-server boot, actionable-element discovery, golden-path synthesis and runner
+server/cli.js              single-page profiles (--quick, --mode, --runs, --scenario)
+server/compare-cli.js      spectra compare
+server/reports-cli.js      spectra reports
+server/args.js, output.js, project-config.js   argv parsing; --json/--out and exit codes; spectra.config.json
+server/api.js              the dashboard's /api/* endpoints + Server-Sent Events
+server/plugin.js           mounts that API in the Vite dev server (npm run dev)
+server/dashboard.js        standalone dashboard: serves dist/ + the same API (spectra dashboard)
+shared/compare.js          the diff engine; used by the Compare tab, the PDF and spectra compare, so they always agree
+shared/result.js           summaries, budgets and the versioned --json results
+shared/snapshot.js         snapshot file naming, validation, commit-from-filename
+schema/                    JSON Schemas for the results and spectra.config.json
+src/                       React + d3 dashboard (App, components/, hooks/, heat.js, layout.js)
 src/theme.js, themes.css   theme + light/dark mode (CSS variables per theme; see Appearance and themes)
 src/culprits.js            merges findings into the top culprits and groups findings by root cause
 src/components/            CulpritsHero + CulpritSphere (top culprits), FindingsList, Vitals, PageMap, AppearanceMenu, Popover, …
-fixtures/demo-app/         app with deliberate performance bugs (npm run demo); ?fixed=1 is the "optimised" variant
-reports/  .chrome-profile/ generated data (git-ignored)
+fixtures/                  demo apps with deliberate performance bugs: demo-app (React; npm run demo, ?fixed=1 is the
+                           "optimised" variant), vue-demo, angular-demo
+scripts/docs-screenshots.mjs   captures the annotated screenshots for the website docs (not published to npm)
+docs/                      images used by the README
+reports/  .spectra/        generated data (git-ignored)
 ```
 
-- `npm test` runs the analysis unit tests (`node --test`). Test files are named `test-*.js`, deliberately **not**
-  `*.test.js`, because the repo's jest `testRegex` covers `tools/` and would otherwise try to run them.
-- Format with the repo's Prettier config: `../../node_modules/.bin/prettier --write server src`.
-- The tool is plain JS/JSX with its own dependencies (`npm install` in this folder only). `npm run build` produces a
-  static UI, but the API lives in the dev server, so always use `npm run dev`.
+- `npm test` runs the analysis, comparison, result and CLI tests (`node --test`, test files named `test-*.js`). The
+  CLI tests drive `bin/spectra.js` against synthetic reports, so they need no Chrome.
+- The tool is plain JS/JSX with its own dependencies (`npm install` in this folder only). `npm run build` produces the
+  prebuilt dashboard in `dist/` (it also runs before every publish), and `spectra dashboard` serves it together with
+  the same API the dev server mounts. Use `npm run dev` while working on the dashboard itself.
+- Only `puppeteer-core` and `@jridgewell/trace-mapping` are runtime dependencies. The dashboard's libraries (React,
+  d3, highlight.js) are dev dependencies because they are bundled into `dist/`; keep it that way, so installs stay small.
+- Command-line output: in `--json` mode stdout carries only the JSON, so human-readable lines go to stderr (see
+  `server/output.js`). Exit codes are `0`, `1` (could not run) and `2` (budget or regression).
 - Styling is plain CSS. **Colours come only from the variables in `src/themes.css`** (one block per theme × mode); do
   not hard-code colours in `styles.css` or components, or they will look wrong in one of the four palettes.
 - To add a culprit rule, add it to `buildFindings` in `server/analysis/findings.js` (return evidence, `culprits` and a
   `fix`) and cover it in `server/test-analysis.js`.
+- **Docs.** The user guide lives in the [Progen Labs website](https://github.com/progen-labs/website) repository
+  (`src/spectra-docs/pages/*.md`); update it along with any user-facing change. Its annotated screenshots come from
+  `scripts/docs-screenshots.mjs`, which drives a running dashboard, saves one `.webp` per screen and measures where each
+  numbered region is (`manifest.json`), so the call-outs stay aligned. The recording steps are on the guide's
+  [Contributing page](https://progen-labs.github.io/website/#spectra/docs/contributing). `docs/dashboard.webp` in this
+  repository is a copy of its `dashboard-overview` screenshot.
 
 ## Appearance and themes
 

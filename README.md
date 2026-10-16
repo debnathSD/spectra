@@ -14,6 +14,9 @@ and per-component render/change-detection time; source files too, where the fram
 functions. A [Progen Labs](https://github.com/progen-labs) project — open source, non-profit, no
 telemetry, no account required.
 
+**Documentation:** the full guide, with annotated screenshots of every screen, is at
+[progen-labs.github.io/website](https://progen-labs.github.io/website/#spectra/docs/introduction).
+
 ## Install
 
 ```bash
@@ -52,18 +55,23 @@ Then open the visual dashboard — ranked culprits, React re-renders, long tasks
 **PDF export** and **commit-to-commit compare**:
 
 ```bash
-npx spectra dashboard
+npx spectra dashboard --open
 ```
+
+![The Spectra dashboard: the top culprit of a recording, burn() in src/heavy.js, with its time and a suggested fix](docs/dashboard.webp)
+
+A [tour of the dashboard](https://progen-labs.github.io/website/#spectra/docs/dashboard), with every part
+labelled, is in the docs.
 
 ## Commands
 
 ```
-spectra performance [options]       Golden-path evaluation (default)
-spectra performance --quick         One page-load profile (about 15 s)
-spectra compare <before> <after>    Did it get faster? Noise-aware before/after
-spectra reports                     List saved reports
-spectra dashboard [--port N]        Open the dashboard UI
-spectra --help                      Full option list
+spectra performance [options]            Golden-path evaluation (default)
+spectra performance --quick              One page-load profile (about 15 s)
+spectra compare <before> <after>         Did it get faster? Noise-aware before/after
+spectra reports                          List saved reports
+spectra dashboard [--port N] [--open]    Open the dashboard UI
+spectra --help                           Full option list
 spectra --version
 ```
 
@@ -162,6 +170,18 @@ through source maps (and bundler markers as a fallback), then ranks the files, f
 that cost the most main-thread time. See the
 [deep-dive docs](https://github.com/progen-labs/spectra/blob/main/DOCS.md) for how capture, correlation
 and report generation work.
+
+## Documentation
+
+- **[The guide](https://progen-labs.github.io/website/#spectra/docs/introduction)**: every feature, with
+  annotated screenshots. Start with
+  [Quick start](https://progen-labs.github.io/website/#spectra/docs/quick-start),
+  [Compare before and after](https://progen-labs.github.io/website/#spectra/docs/compare),
+  [Budgets and CI](https://progen-labs.github.io/website/#spectra/docs/budgets),
+  [JSON output](https://progen-labs.github.io/website/#spectra/docs/json-output), the
+  [Findings reference](https://progen-labs.github.io/website/#spectra/docs/findings) and
+  [Troubleshooting](https://progen-labs.github.io/website/#spectra/docs/troubleshooting).
+- **[DOCS.md](DOCS.md)**: the in-repo manual, the technical deep dive, and how to contribute.
 
 ## License
 

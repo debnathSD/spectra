@@ -99,7 +99,7 @@ function printProfile(result, reports) {
   if (reports.length === 1) {
     log(`\nReport ${rep.id} (${rep.meta.attribution}, ${rep.meta.sampleCount} samples)`);
     log(
-      `TBT ${rep.vitals.tbtMs}ms · long tasks ${rep.vitals.longTaskCount} · CLS ${rep.vitals.cls} · FCP ${rep.vitals.fcpMs}ms · LCP ${rep.vitals.lcpMs}ms · forced layouts ${rep.totals.forcedLayoutCount}`,
+      `TBT ${fmt('ms', s.tbtMs)} · long tasks ${s.longTaskCount ?? '—'} · CLS ${s.cls ?? '—'} · FCP ${fmt('ms', s.fcpMs)} · LCP ${fmt('ms', s.lcpMs)} · forced layouts ${s.forcedLayoutCount ?? '—'}`,
     );
   } else {
     const range = (key, unit) => {
