@@ -70,6 +70,7 @@ spectra performance [options]            Golden-path evaluation (default)
 spectra performance --quick              One page-load profile (about 15 s)
 spectra compare <before> <after>         Did it get faster? Noise-aware before/after
 spectra reports                          List saved reports
+spectra mcp [--project <dir>]            MCP server for AI tools (stdio)
 spectra dashboard [--port N] [--open]    Open the dashboard UI
 spectra --help                           Full option list
 spectra --version
@@ -150,6 +151,34 @@ Findings carry the file, line, cost in ms and a suggested fix. The format is des
 shipped with the package (`schema/result.schema.json`); additive changes keep `schemaVersion`, breaking
 changes bump it. Saved reports carry their own `schemaVersion` too.
 
+## Use it from your AI assistant
+
+Spectra is an [MCP](https://modelcontextprotocol.io) server too, so an AI coding assistant can profile a page,
+fix what it finds, and prove each fix with before/after measurements.
+
+**Claude Code**, with the plugin (adds an *improve-performance* skill and `/spectra:audit`):
+
+```
+/plugin marketplace add progen-labs/spectra
+/plugin install spectra@progen-labs
+```
+
+**Any MCP client** (Claude Code without the plugin, Claude Desktop, Cursor, VS Code, Windsurf…): run
+`npx -y @progen-labs/spectra mcp` as a stdio server (Spectra 0.3.0 or later). For example:
+
+```bash
+claude mcp add spectra -- npx -y @progen-labs/spectra mcp
+```
+
+```json
+{ "mcpServers": { "spectra": { "command": "npx", "args": ["-y", "@progen-labs/spectra", "mcp", "--project", "/path/to/your/app"] } } }
+```
+
+Tools: `profile_page`, `verify_change` (re-profile and compare against a baseline), `compare_profiles`,
+`run_golden_paths`, `list_reports` and `get_report`. The server profiles pages on this machine only (start it with
+`--allow-remote` to lift that), runs one browser at a time, and stops Chrome and any dev server it started when a
+call is cancelled. See the [MCP guide](https://progen-labs.github.io/website/#spectra/docs/mcp-server).
+
 ## Safe by default
 
 Auto-exploration never triggers destructive actions. Spectra detects controls that would mutate state —
@@ -178,7 +207,8 @@ and report generation work.
   [Quick start](https://progen-labs.github.io/website/#spectra/docs/quick-start),
   [Compare before and after](https://progen-labs.github.io/website/#spectra/docs/compare),
   [Budgets and CI](https://progen-labs.github.io/website/#spectra/docs/budgets),
-  [JSON output](https://progen-labs.github.io/website/#spectra/docs/json-output), the
+  [JSON output](https://progen-labs.github.io/website/#spectra/docs/json-output),
+  [Claude Code](https://progen-labs.github.io/website/#spectra/docs/claude-code), the
   [Findings reference](https://progen-labs.github.io/website/#spectra/docs/findings) and
   [Troubleshooting](https://progen-labs.github.io/website/#spectra/docs/troubleshooting).
 - **[DOCS.md](DOCS.md)**: the in-repo manual, the technical deep dive, and how to contribute.

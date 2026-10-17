@@ -434,6 +434,44 @@ point at the reports on disk instead of embedding them. The JSON Schemas ship in
 `config.schema.json`), and the builders are exported as `@progen-labs/spectra/result` (`shared/result.js`). Saved
 reports carry their own `schemaVersion`; additive changes keep it, breaking changes bump it.
 
+## AI assistants (MCP)
+
+`spectra mcp` runs Spectra as a [Model Context Protocol](https://modelcontextprotocol.io) server over stdio, so an AI
+coding assistant can profile a page, change the code and prove the change helped. Every profiling tool runs the
+regular CLI with `--json` in the project, so its numbers are identical to a run by hand.
+
+| Tool | What it does |
+| --- | --- |
+| `profile_page` | `url?`, `runs` (default 3), `mode` load/live, `scenario?`, `duration?`, `throttle?` → medians, spread, ranked findings with file, line and fix, and a result file saved in `.spectra/results/` |
+| `verify_change` | `baseline` (a `profile_page` result file) → re-profiles the same page the same way and compares: verdict, confidence, metrics beyond the noise, findings resolved and new |
+| `compare_profiles` | `before`, `after`: result files, report ids or comma-joined ids → the same comparison, without recording |
+| `run_golden_paths` | `url?`, `paths` (default 6) → the journey matrix (safe mode, as in the CLI) |
+| `list_reports` | the project's saved reports, newest first |
+| `get_report` | `id`, `section`: overview, findings, components, functions, files, long_tasks or network |
+
+- **Project folder**, first match wins: `--project <dir>`, then the client's first MCP root (`roots/list`), then the
+  working directory. An unexpanded `${VAR}` passed as `--project` counts as unset.
+- **Local pages only.** URLs must be on this machine (`localhost`, `127.x.x.x`, `::1`, `*.localhost`) unless the
+  server was started with `--allow-remote` (or `SPECTRA_MCP_ALLOW_REMOTE=1`). Scenario files must be inside the
+  project. Results remind the model that text from the page is data, not instructions.
+- **One browser at a time**: profiling calls queue, because runs share the project's Chrome profile.
+- **Progress and cancellation**: the CLI's status lines become `notifications/progress` (with a `progressToken`);
+  `notifications/cancelled` terminates the run, and the CLI's signal handling closes Chrome and stops any dev
+  server it started. A cancelled call gets no response, as the protocol requires.
+- **No SDK at runtime.** The server implements the stdio transport directly (newline-delimited JSON-RPC 2.0;
+  protocol versions 2024-11-05 to 2025-11-25) to keep installs small. `server/test-mcp.js` checks it against the
+  official SDK client, which is a dev dependency.
+
+### The Claude Code plugin
+
+`plugins/spectra/` is a Claude Code plugin, listed by the marketplace in `.claude-plugin/marketplace.json` at the
+repository root (`/plugin marketplace add progen-labs/spectra`, then `/plugin install spectra@progen-labs`). It
+holds `.claude-plugin/plugin.json`, a `.mcp.json` that starts `npx -y @progen-labs/spectra@>=0.3.0 mcp --project
+${CLAUDE_PROJECT_DIR}`, and two skills: `improve-performance` (the measure → change → `verify_change` loop, which
+Claude uses on its own when asked to make something faster) and `audit` (`/spectra:audit`, a report without code
+changes). Keep `plugin.json`'s `version` equal to the package version, and check changes with
+`claude plugin validate --strict ./plugins/spectra` and `claude plugin validate --strict .`.
+
 ## Configuration
 
 Budgets live in `spectra.config.json` (see [Budgets and exit codes](#budgets-and-exit-codes)). Environment variables,
@@ -843,6 +881,7 @@ server/explore/            dev-server boot, actionable-element discovery, golden
 server/cli.js              single-page profiles (--quick, --mode, --runs, --scenario)
 server/compare-cli.js      spectra compare
 server/reports-cli.js      spectra reports
+server/mcp.js              spectra mcp: the MCP server (stdio)
 server/args.js, output.js, project-config.js   argv parsing; --json/--out and exit codes; spectra.config.json
 server/api.js              the dashboard's /api/* endpoints + Server-Sent Events
 server/plugin.js           mounts that API in the Vite dev server (npm run dev)
@@ -858,12 +897,16 @@ src/components/            CulpritsHero + CulpritSphere (top culprits), Findings
 fixtures/                  demo apps with deliberate performance bugs: demo-app (React; npm run demo, ?fixed=1 is the
                            "optimised" variant), vue-demo, angular-demo
 scripts/docs-screenshots.mjs   captures the annotated screenshots for the website docs (not published to npm)
+plugins/spectra/           the Claude Code plugin (skills + MCP server config)
+.claude-plugin/            the plugin marketplace (marketplace.json)
+server/testing/            fixtures shared by the tests (synthetic reports, throwaway projects)
 docs/                      images used by the README
 reports/  .spectra/        generated data (git-ignored)
 ```
 
-- `npm test` runs the analysis, comparison, result and CLI tests (`node --test`, test files named `test-*.js`). The
-  CLI tests drive `bin/spectra.js` against synthetic reports, so they need no Chrome.
+- `npm test` runs the analysis, comparison, result, CLI and MCP tests (`node --test`, test files named `test-*.js`).
+  The CLI and MCP tests drive `bin/spectra.js` against synthetic reports, so they need no Chrome; the MCP tests
+  include a conformance check with the official MCP SDK client.
 - The tool is plain JS/JSX with its own dependencies (`npm install` in this folder only). `npm run build` produces the
   prebuilt dashboard in `dist/` (it also runs before every publish), and `spectra dashboard` serves it together with
   the same API the dev server mounts. Use `npm run dev` while working on the dashboard itself.

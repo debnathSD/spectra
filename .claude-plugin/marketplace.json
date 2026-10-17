@@ -1,0 +1,14 @@
+{
+  "name": "progen-labs",
+  "owner": { "name": "Progen Labs", "url": "https://github.com/progen-labs" },
+  "description": "Free, open-source developer tools from Progen Labs.",
+  "plugins": [
+    {
+      "name": "spectra",
+      "source": "./plugins/spectra",
+      "description": "Find the file, function and component that make your frontend slow, fix them, and prove each fix with before/after measurements.",
+      "category": "performance",
+      "tags": ["performance", "profiling", "web-vitals", "react", "vue", "angular", "nextjs"]
+    }
+  ]
+}

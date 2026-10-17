@@ -5,6 +5,7 @@
  *   spectra performance [--url <page>] [profiler options]   profile a frontend
  *   spectra compare <before> <after>                         before vs after, noise-aware
  *   spectra reports                                          list saved reports
+ *   spectra mcp [--project <dir>]                            MCP server for AI tools (stdio)
  *   spectra dashboard                                        open the dashboard UI
  *   spectra --help                                           show this help
  *   spectra --version                                        print the version
@@ -39,6 +40,9 @@ Usage:
                                   Compare two profiles; a change counts only when
                                   it is bigger than the noise between runs
   spectra reports [--json]        List saved reports (ids for compare / dashboard)
+  spectra mcp [--project <dir>] [--allow-remote]
+                                  Run as an MCP server (stdio) for Claude Code,
+                                  Cursor, VS Code and other AI tools
   spectra dashboard               Open the Spectra dashboard UI
   spectra --help, -h              Show this help
   spectra --version, -v           Print the version
@@ -94,6 +98,22 @@ Examples:
   spectra performance --json | jq .summary         # pipe it anywhere
 `;
 
+// What a terminate signal must clean up: the running script and a dev server
+// Spectra started. Without this, stopping Spectra from outside (an editor or
+// an AI client cancelling a run) would leave the dev server running.
+const active = { child: null, server: null };
+let stopping = false;
+for (const signal of ['SIGINT', 'SIGTERM']) {
+  process.on(signal, () => {
+    if (stopping) return;
+    stopping = true;
+    active.child?.kill(signal);
+    Promise.resolve(active.server?.stop())
+      .catch(() => {})
+      .finally(() => process.exit(signal === 'SIGINT' ? 130 : 143));
+  });
+}
+
 function runNodeAsync(scriptRelPath, args, extraEnv = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(
@@ -105,7 +125,11 @@ function runNodeAsync(scriptRelPath, args, extraEnv = {}) {
         env: { ...process.env, ...extraEnv },
       },
     );
-    child.on('exit', code => resolve(code ?? 0));
+    active.child = child;
+    child.on('exit', code => {
+      if (active.child === child) active.child = null;
+      resolve(code ?? 0);
+    });
     child.on('error', reject);
   });
 }
@@ -189,11 +213,10 @@ async function runProfile() {
   const { value: command, rest: afterCmd } = takeOption(args, 'command');
   const { value: bootTimeout, rest: profileArgs } = takeOption(afterCmd, 'boot-timeout');
   const fw = detectFramework(cwd);
-  const label =
-    fw.framework !== 'unknown' ? `${fw.framework}/${fw.bundler}` : fw.bundler;
+  const label = [fw.framework, fw.bundler].filter(x => x && x !== 'unknown').join('/');
   // Status goes to stderr so it never mixes with the report on stdout.
   console.error(
-    `spectra: no --url given — starting the ${label} dev server in ${cwd} …`,
+    `spectra: no --url given — starting the ${label ? `${label} ` : ''}dev server in ${cwd} …`,
   );
 
   let server;
@@ -207,6 +230,7 @@ async function runProfile() {
     console.error(`spectra: ${err.message}`);
     return 1;
   }
+  active.server = server;
   console.error(`spectra: dev server ready at ${server.url} — profiling …\n`);
 
   let code = 1;
@@ -217,6 +241,7 @@ async function runProfile() {
       env,
     );
   } finally {
+    active.server = null;
     await server.stop();
     console.error('\nspectra: stopped the dev server.');
   }
@@ -246,6 +271,7 @@ function runDashboard() {
       env: { ...process.env, ...projectEnv() },
     },
   );
+  active.child = child;
   child.on('exit', code => process.exit(code ?? 0));
   child.on('error', err => {
     console.error(`spectra: failed to start the dashboard — ${err.message}`);
@@ -274,6 +300,15 @@ switch (command) {
       });
     break;
   }
+  case 'mcp':
+    // In-process: stdin/stdout are the protocol channel, and the working
+    // directory stays the user's (the project, unless --project or the
+    // client's roots say otherwise).
+    import('../server/mcp.js').catch(err => {
+      console.error(`spectra: ${err.message}`);
+      process.exit(1);
+    });
+    break;
   case 'dashboard':
   case 'ui':
     runDashboard();
