@@ -1,0 +1,163 @@
+{
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "dpr": 2
+  },
+  "duration": 69.698,
+  "frames": 3098,
+  "markers": [
+    {
+      "name": "start",
+      "t": 0.065
+    },
+    {
+      "name": "editor",
+      "t": 4.848
+    },
+    {
+      "name": "profile:palette",
+      "t": 4.849
+    },
+    {
+      "name": "profile:enter",
+      "t": 7.848
+    },
+    {
+      "name": "profile:url",
+      "t": 10.386
+    },
+    {
+      "name": "profile:running",
+      "t": 10.397
+    },
+    {
+      "name": "profile:done",
+      "t": 25.905,
+      "text": "Spectra: 0 ms blocking, LCP 124 ms, 13 findings.",
+      "lensText": "⚡ Spectra: Row · 7,200 renders · 1.44 s rendering",
+      "notification": {
+        "x": 980,
+        "y": 794,
+        "width": 452,
+        "height": 70
+      },
+      "status": {
+        "x": 36,
+        "y": 872,
+        "width": 267.71875,
+        "height": 24
+      },
+      "lens": {
+        "x": 430,
+        "y": 110,
+        "width": 306.25,
+        "height": 20
+      }
+    },
+    {
+      "name": "mouse",
+      "t": 29.408,
+      "from": {
+        "x": 892.8,
+        "y": 450
+      },
+      "to": {
+        "x": 574.4,
+        "y": 142
+      },
+      "ms": 900
+    },
+    {
+      "name": "hover",
+      "t": 31.294,
+      "at": {
+        "x": 574.4,
+        "y": 142
+      },
+      "box": {
+        "x": 431,
+        "y": 155,
+        "width": 750,
+        "height": 250
+      }
+    },
+    {
+      "name": "mouse",
+      "t": 34.794,
+      "from": {
+        "x": 574.4,
+        "y": 142
+      },
+      "to": {
+        "x": 792.0000000000001,
+        "y": 558
+      },
+      "ms": 700
+    },
+    {
+      "name": "problems",
+      "t": 36.446
+    },
+    {
+      "name": "problems:open",
+      "t": 37.087,
+      "panel": {
+        "x": 352,
+        "y": 576,
+        "width": 1084,
+        "height": 292
+      }
+    },
+    {
+      "name": "edit",
+      "t": 41.799
+    },
+    {
+      "name": "edit:type",
+      "t": 43.433
+    },
+    {
+      "name": "edit:saved",
+      "t": 46.727
+    },
+    {
+      "name": "verify:palette",
+      "t": 46.727
+    },
+    {
+      "name": "verify:enter",
+      "t": 50.1
+    },
+    {
+      "name": "verify:running",
+      "t": 50.41
+    },
+    {
+      "name": "verify:shown",
+      "t": 64.692
+    },
+    {
+      "name": "verify:done",
+      "t": 66.197,
+      "text": "Spectra: Improved — JavaScript CPU time: 1.56 s → 105 ms (−93%) (confidence: medium)",
+      "lensText": "⚡ Spectra: Row · 7,320 renders · 6.3 ms rendering",
+      "notification": {
+        "x": 980,
+        "y": 772,
+        "width": 452,
+        "height": 92
+      },
+      "lens": {
+        "x": 430,
+        "y": 110,
+        "width": 310.9375,
+        "height": 20
+      }
+    },
+    {
+      "name": "end",
+      "t": 69.698
+    }
+  ]
+}

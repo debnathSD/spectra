@@ -954,6 +954,8 @@ scripts/docs-screenshots.mjs   captures the annotated screenshots for the websit
 plugins/spectra/           the Claude Code plugin (skills + MCP server config)
 vscode/                    the VS Code extension (extension.js, lib/, tests)
 action.yml, action/        the GitHub Action (run.mjs, summary.mjs, test-summary.js)
+video/                     the docs' demo videos, made with Remotion from a real VS Code recording and real MCP
+                           output (own package.json; not published to npm; see video/README.md)
 .github/workflows/ci.yml   CI: tests, then the action on the demo app
 .claude-plugin/            the plugin marketplace (marketplace.json)
 server/testing/            fixtures shared by the tests (synthetic reports, throwaway projects)

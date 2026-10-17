@@ -1,0 +1,25 @@
+{
+  "name": "spectra-videos",
+  "private": true,
+  "description": "Spectra's demo videos, made with Remotion from real recordings and real Spectra output. Not part of the npm package.",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.jsx",
+    "record:vscode": "node scripts/record-vscode.mjs",
+    "render": "node scripts/render.mjs",
+    "stills": "node scripts/stills.mjs"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.531",
+    "@remotion/cli": "4.0.531",
+    "@remotion/google-fonts": "4.0.531",
+    "@remotion/media-utils": "4.0.531",
+    "@remotion/motion-blur": "4.0.531",
+    "@remotion/paths": "4.0.531",
+    "@remotion/renderer": "4.0.531",
+    "@remotion/transitions": "4.0.531",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.531"
+  }
+}
