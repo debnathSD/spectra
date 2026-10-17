@@ -1,0 +1,112 @@
+name: Spectra performance check
+description: Profile your frontend in CI, enforce performance budgets, and compare a pull request with its base commit. Free and open source.
+author: Progen Labs
+branding:
+  icon: activity
+  color: blue
+
+inputs:
+  working-directory:
+    description: Folder of the frontend project (where its package.json is).
+    default: .
+  url:
+    description: Page to profile, if your workflow already serves the app. Leave empty and Spectra starts the project's dev server.
+    default: ''
+  command:
+    description: Command that starts the dev server, if not your npm dev script (e.g. "npm run preview").
+    default: ''
+  mode:
+    description: '"quick" (page-load profile, the default) or "golden-paths" (discovered user journeys).'
+    default: quick
+  runs:
+    description: Page-load runs per side in quick mode; medians are reported.
+    default: '3'
+  paths:
+    description: Maximum journeys in golden-paths mode.
+    default: '6'
+  config:
+    description: Budgets file, relative to working-directory. Default spectra.config.json.
+    default: ''
+  compare-to-base:
+    description: On pull requests, also profile the base commit (in a git worktree, on the same runner) and compare.
+    default: 'false'
+  install-command:
+    description: How to install the base commit's dependencies. Default from its lockfile (npm ci, yarn, pnpm).
+    default: ''
+  base-sha:
+    description: Base commit to compare with. Default the pull request's base.
+    default: ''
+  fail-on-budget:
+    description: Fail the check when a budget is exceeded.
+    default: 'true'
+  fail-on-regression:
+    description: Fail the check when the comparison verdict is regressed or mixed.
+    default: 'false'
+  comment:
+    description: Post (and update) the result as a pull request comment. Needs "pull-requests write" permission.
+    default: 'false'
+  github-token:
+    description: Token for the pull request comment.
+    default: ${{ github.token }}
+  spectra-version:
+    description: Spectra version to run with npx. Default the project's own @progen-labs/spectra, else the latest.
+    default: ''
+  cli:
+    description: Advanced, path to the Spectra CLI to run (e.g. a checkout's bin/spectra.js).
+    default: ''
+  chrome-sandbox:
+    description: Keep Chrome's sandbox on Linux runners (off by default, as is usual for headless Chrome in CI).
+    default: 'false'
+  artifact-name:
+    description: Name of the artifact that holds the reports.
+    default: spectra-reports
+
+outputs:
+  result-file:
+    description: The --json result of this commit.
+    value: ${{ steps.spectra.outputs.result-file }}
+  summary-file:
+    description: The Markdown summary (also in the job summary).
+    value: ${{ steps.spectra.outputs.summary-file }}
+  verdict:
+    description: improved, regressed, mixed or neutral (with compare-to-base), else empty.
+    value: ${{ steps.spectra.outputs.verdict }}
+  over-budget:
+    description: true when a budget was exceeded.
+    value: ${{ steps.spectra.outputs.over-budget }}
+
+runs:
+  using: composite
+  steps:
+    - id: spectra
+      shell: bash
+      run: node "${{ github.action_path }}/action/run.mjs"
+      env:
+        SPECTRA_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        SPECTRA_URL: ${{ inputs.url }}
+        SPECTRA_COMMAND: ${{ inputs.command }}
+        SPECTRA_MODE: ${{ inputs.mode }}
+        SPECTRA_RUNS: ${{ inputs.runs }}
+        SPECTRA_PATHS: ${{ inputs.paths }}
+        SPECTRA_CONFIG: ${{ inputs.config }}
+        SPECTRA_COMPARE_TO_BASE: ${{ inputs.compare-to-base }}
+        SPECTRA_INSTALL_COMMAND: ${{ inputs.install-command }}
+        SPECTRA_BASE_SHA: ${{ inputs.base-sha }}
+        SPECTRA_FAIL_ON_BUDGET: ${{ inputs.fail-on-budget }}
+        SPECTRA_FAIL_ON_REGRESSION: ${{ inputs.fail-on-regression }}
+        SPECTRA_COMMENT: ${{ inputs.comment }}
+        SPECTRA_GITHUB_TOKEN: ${{ inputs.github-token }}
+        SPECTRA_VERSION: ${{ inputs.spectra-version }}
+        SPECTRA_CLI: ${{ inputs.cli }}
+        SPECTRA_CHROME_SANDBOX: ${{ inputs.chrome-sandbox }}
+        SPECTRA_ARTIFACT_NAME: ${{ inputs.artifact-name }}
+    - if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          ${{ inputs.working-directory }}/.spectra/reports
+          ${{ runner.temp }}/spectra-action/*.json
+          ${{ runner.temp }}/spectra-action/*.md
+        if-no-files-found: ignore
+        retention-days: 14

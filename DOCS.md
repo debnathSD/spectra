@@ -472,6 +472,31 @@ Claude uses on its own when asked to make something faster) and `audit` (`/spect
 changes). Keep `plugin.json`'s `version` equal to the package version, and check changes with
 `claude plugin validate --strict ./plugins/spectra` and `claude plugin validate --strict .`.
 
+## GitHub Action
+
+`action.yml` (repository root) makes this repository a composite GitHub Action: `uses: progen-labs/spectra@v1`. Its
+engine is `action/run.mjs`, with the Markdown in `action/summary.mjs`.
+
+1. **Profile this commit**: `spectra performance --json --out` in `working-directory`, in `quick` mode (`--mode load
+   --runs N`) or `golden-paths` mode (`--paths N`), self-booting the dev server unless `url` is given. The Spectra it
+   runs is `cli`, else the project's own install, else `npx @progen-labs/spectra@<spectra-version|latest>`; the same
+   one is used for both sides of a comparison.
+2. **Compare to the base** (`compare-to-base: true`, quick mode, pull requests): fetch the base commit
+   (`base-sha` or the event's `pull_request.base.sha`), check it out in a git worktree under `RUNNER_TEMP`, install
+   its dependencies (`install-command`, else `npm ci` / `yarn` / `pnpm` from its lockfile, else `npm install`),
+   profile it the same way on the same runner, and run `spectra compare base head --json`.
+3. **Report**: the Markdown goes to `GITHUB_STEP_SUMMARY` and, with `comment: true`, to one pull request comment that
+   is updated on later runs (found by an HTML marker; needs `pull-requests: write`). Outputs: `result-file`,
+   `summary-file`, `verdict`, `over-budget`. The next step uploads `.spectra/reports` and the result files as the
+   `artifact-name` artifact, even when the check fails.
+4. **Decide**: fail when Spectra couldn't run, when a budget is over (`fail-on-budget`, default on) or when the
+   verdict is regressed or mixed (`fail-on-regression`, default off).
+
+On Linux runners Chrome runs with `--no-sandbox` (usual for headless Chrome in ephemeral CI) unless
+`chrome-sandbox: true`. `.github/workflows/ci.yml` runs the tests and then this action on the demo app (`uses: ./`).
+`action/test-summary.js` covers the summary and the pass/fail decision. Release by moving the `v1` tag to the new
+commit.
+
 ## VS Code extension
 
 `vscode/` is a VS Code extension (`progen-labs.spectra`, plain CommonJS, no build step, no runtime dependencies). It is
@@ -926,13 +951,15 @@ fixtures/                  demo apps with deliberate performance bugs: demo-app 
 scripts/docs-screenshots.mjs   captures the annotated screenshots for the website docs (not published to npm)
 plugins/spectra/           the Claude Code plugin (skills + MCP server config)
 vscode/                    the VS Code extension (extension.js, lib/, tests)
+action.yml, action/        the GitHub Action (run.mjs, summary.mjs, test-summary.js)
+.github/workflows/ci.yml   CI: tests, then the action on the demo app
 .claude-plugin/            the plugin marketplace (marketplace.json)
 server/testing/            fixtures shared by the tests (synthetic reports, throwaway projects)
 docs/                      images used by the README
 reports/  .spectra/        generated data (git-ignored)
 ```
 
-- `npm test` runs the analysis, comparison, result, CLI and MCP tests (`node --test`, test files named `test-*.js`).
+- `npm test` runs the analysis, comparison, result, CLI, MCP and Action tests (`node --test`, test files named `test-*.js`).
   The CLI and MCP tests drive `bin/spectra.js` against synthetic reports, so they need no Chrome; the MCP tests
   include a conformance check with the official MCP SDK client.
 - The tool is plain JS/JSX with its own dependencies (`npm install` in this folder only). `npm run build` produces the

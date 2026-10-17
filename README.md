@@ -142,6 +142,37 @@ Exit codes make it a CI gate:
 | `1` | Could not run (no Chrome, server down, bad config) |
 | `2` | Ran, but a budget was exceeded, or `compare --fail-on-regression` found a regression |
 
+### GitHub Action
+
+The repository is also a GitHub Action. On every pull request it profiles the change and its base commit on the
+same runner, compares them beyond run-to-run noise, enforces your budgets, and writes the result to the job summary
+and (optionally) a PR comment:
+
+```yaml
+name: Performance
+on: pull_request
+permissions:
+  contents: read
+  pull-requests: write   # only for comment: true
+jobs:
+  spectra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - uses: progen-labs/spectra@v1
+        with:
+          compare-to-base: true
+          fail-on-regression: true
+          comment: true
+```
+
+Inputs include `url`, `command`, `mode` (`quick` or `golden-paths`), `runs`, `config`, `fail-on-budget` and
+`working-directory`; outputs are `result-file`, `verdict`, `over-budget` and `summary-file`. Full reports are
+uploaded as an artifact. See the [Action guide](https://progen-labs.github.io/website/#spectra/docs/github-action).
+
 ## Machine-readable output
 
 `--json` prints a small, versioned result on stdout and sends every human-readable line to stderr, so it can
