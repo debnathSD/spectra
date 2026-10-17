@@ -515,7 +515,7 @@ export const HarnessScene = ({ len }) => {
   return (
     <AbsoluteFill>
       <Sequence durationInFrames={BAR + 10} layout="none">
-        <ChapterCard n="05" title="AI fix harness" line="Hands-off fixes, proven." until={BAR - 10} />
+        <ChapterCard n="06" title="AI fix harness" line="Hands-off fixes, proven." until={BAR - 10} />
       </Sequence>
       <Sequence from={o - 8} layout="none">
         <SceneTime.Provider value={{ scale: 1, total: (len - o + 8) / fps, shift: 290, dist: 1.5 }}>
@@ -523,7 +523,7 @@ export const HarnessScene = ({ len }) => {
         </SceneTime.Provider>
       </Sequence>
       <Sequence from={o} layout="none">
-        <ChapterTag n="05" title="AI fix harness" until={len - o - 8} />
+        <ChapterTag n="06" title="AI fix harness" until={len - o - 8} />
         <SideText
           at={4}
           until={len - o - 8}
@@ -532,6 +532,37 @@ export const HarnessScene = ({ len }) => {
           body="An AI agent fixes the costliest findings in a copy of your code. A change is kept only if your checks pass and it measures faster."
           you="Review a branch of proven fixes."
           users="Real speed-ups, never a broken page."
+        />
+      </Sequence>
+    </AbsoluteFill>
+  );
+};
+
+// ---------------------------------------------------------------- compare two commits
+export const CompareScene = ({ len }) => {
+  const { f, fps } = useT();
+  const o = BAR;
+  return (
+    <AbsoluteFill>
+      <Sequence durationInFrames={BAR + 10} layout="none">
+        <ChapterCard n="05" title="Compare two commits" line="Proof for every pull request." until={BAR - 10} />
+      </Sequence>
+      <Sequence from={o - 8} layout="none">
+        <SceneTime.Provider value={{ scale: 1, total: (len - o + 8) / fps, shift: 0, dist: 1 }}>
+          <AbsoluteFill style={{ opacity: fade(f - o + 8, len - o + 8, 10, 8) }}>{React.createElement(FEATURE_SCENES.compare, { loop: false, fps })}</AbsoluteFill>
+        </SceneTime.Provider>
+      </Sequence>
+      <Sequence from={o} layout="none">
+        <ChapterTag n="05" title="Compare two commits" until={len - o - 8} />
+        {/* the caption leaves when the PDF takes the stage (scene time 4.5 s) */}
+        <SideText
+          at={4}
+          until={Math.round(4.4 * fps) - 8}
+          top={210}
+          title="Before and after, in one file"
+          body="In the dashboard, pick the runs from two commits. Spectra shows what improved, file by file, beyond the noise, and exports a PDF summary or a detailed report."
+          you="Attach the proof to your pull request."
+          users="Every release measurably faster."
         />
       </Sequence>
     </AbsoluteFill>
@@ -624,7 +655,7 @@ export const OpenSourceScene = ({ len }) => {
           <div style={{ font: `600 34px ${fonts.ui}`, color: '#fff' }}>No account. No paid tier. Runs on your machine.</div>
         </Reveal>
         <Reveal at={BAR * 2.2} until={len - 6} kind="up" style={{ marginTop: 10 }}>
-          <div style={{ font: `500 28px ${fonts.ui}`, color: C.dim }}>Built in the open by Progen Labs, a nonprofit. Free today, free forever.</div>
+          <div style={{ font: `500 28px ${fonts.ui}`, color: C.dim }}>Built in the open by Progen Labs, an independent lab. Free today, free forever.</div>
         </Reveal>
       </AbsoluteFill>
     </AbsoluteFill>

@@ -1,5 +1,5 @@
-// The launch film is cut to the music: 68 bars at 128 BPM after a two-beat
-// pickup, about two minutes. Chapters start on bar lines.
+// The launch film is cut to the music: 80 bars at 128 BPM after a two-beat
+// pickup, about two and a half minutes. Chapters start on bar lines.
 import { PICKUP, beats } from '../theme.js';
 
 /** The frame where bar n starts (bar 0 is the first downbeat). */
@@ -13,13 +13,14 @@ export const CHAPTERS = [
   { id: 'vscode', from: 24, to: 32, title: 'VS Code extension', n: '03' },
   { id: 'npm', from: 32, to: 36 },
   { id: 'cli', from: 36, to: 52, title: 'The CLI', n: '04' },
-  { id: 'harness', from: 52, to: 56, title: 'AI fix harness', n: '05' },
-  { id: 'frameworks', from: 56, to: 60 },
-  { id: 'open-source', from: 60, to: 64 },
-  { id: 'end', from: 64, to: 68.6 },
+  { id: 'compare', from: 52, to: 64, title: 'Compare two commits', n: '05' },
+  { id: 'harness', from: 64, to: 68, title: 'AI fix harness', n: '06' },
+  { id: 'frameworks', from: 68, to: 72 },
+  { id: 'open-source', from: 72, to: 76 },
+  { id: 'end', from: 76, to: 80.6 },
 ];
-export const DURATION = bar(68.6);
-export const MUSIC = { musicEnd: bar(64), musicBreaks: [[32, 36]], poster: bar(2.4) };
+export const DURATION = bar(80.6);
+export const MUSIC = { musicEnd: bar(76), musicBreaks: [[32, 36]], poster: bar(2.4) };
 
 // the CLI chapter: one bar for its title, then ten features of six beats each
 export const CLI_FEATURES = [

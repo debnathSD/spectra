@@ -14,7 +14,8 @@ export async function makeMusic(tracks) {
   const require = createRequire(`${REPO}/package.json`);
   const puppeteer = require('puppeteer-core');
   const { findChrome } = await import(pathToFileURL(`${REPO}/server/chrome.js`).href);
-  const browser = await puppeteer.launch({ executablePath: findChrome(), headless: true });
+  // synthesising a long film's track takes minutes: no protocol timeout
+  const browser = await puppeteer.launch({ executablePath: findChrome(), headless: true, protocolTimeout: 0 });
   try {
     const page = await browser.newPage();
     await page.addScriptTag({ path: path.join(VIDEO, 'scripts', 'synth.js') });

@@ -1,0 +1,71 @@
+diff --git a/src/main.jsx b/src/main.jsx
+index fcc4656..134e9bf 100644
+--- a/src/main.jsx
++++ b/src/main.jsx
+@@ -1,4 +1,4 @@
+-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
++import { memo, useCallback, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+ import { createRoot } from 'react-dom/client';
+ import { Chart } from './Chart.jsx';
+ import { batchedLayout, burn, thrashLayout } from './heavy.js';
+@@ -12,23 +12,44 @@ const fixed = new URLSearchParams(window.location.search).has('fixed');
+ const MemoRow = memo(Row);
+ const MemoWasted = memo(Wasted);
+ 
++// The tick lives in a tiny store so only the components that show it re-render,
++// instead of the whole App every 50ms.
++let tickValue = 0;
++const tickListeners = new Set();
++function subscribeTick(listener) {
++  tickListeners.add(listener);
++  if (tickListeners.size === 1) {
++    subscribeTick.id = setInterval(() => {
++      tickValue += 1;
++      tickListeners.forEach(l => l());
++    }, 50);
++  }
++  return () => {
++    tickListeners.delete(listener);
++    if (tickListeners.size === 0) clearInterval(subscribeTick.id);
++  };
++}
++const useTick = () => useSyncExternalStore(subscribeTick, () => tickValue);
++
++function TickHeading() {
++  return <h1>Perf demo (tick {useTick()})</h1>;
++}
++
++function TickChart() {
++  return <Chart tick={useTick()} />;
++}
++
+ function App() {
+-  const [tick, setTick] = useState(0);
+   const [banner, setBanner] = useState(false);
+   const list = useRef(null);
+   const onPick = useCallback(() => {}, []);
+   const onSelect = useCallback(() => {}, []);
+   const config = useMemo(() => ({ label: 'settings' }), []);
+ 
+-  useEffect(() => {
+-    const id = setInterval(() => setTick(t => t + 1), 50);
+-    return () => clearInterval(id);
+-  }, []);
+-
+   const WastedComponent = fixed ? MemoWasted : Wasted;
+   return (
+     <div>
+-      <h1>Perf demo (tick {tick})</h1>
++      <TickHeading />
+       <button id="burn" onClick={() => burn(fixed ? 80 : 260)}>
+         Long task
+       </button>
+@@ -48,7 +69,7 @@ function App() {
+         <Panel onSelect={() => {}} config={{ label: 'settings' }} />
+       )}
+       <WastedComponent />
+-      {fixed && <Chart tick={tick} />}
++      {fixed && <TickChart />}
+       <div ref={list}>
+         {Array.from({ length: 120 }, (_, i) => (
+           <MemoRow key={i} index={i} onPick={onPick} />

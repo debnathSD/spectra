@@ -33,5 +33,5 @@ Full guide: <https://progen-labs.github.io/website/#spectra/docs/claude-code>
     </picture>
   </a>
   <br>
-  <sub>Spectra is a <a href="https://progen-labs.github.io/website/">Progen Labs</a> project: open source, nonprofit, always free.</sub>
+  <sub>Spectra is a <a href="https://progen-labs.github.io/website/">Progen Labs</a> project: independent, open source, always free.</sub>
 </p>

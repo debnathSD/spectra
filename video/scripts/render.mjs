@@ -20,7 +20,7 @@ const OUT = path.join(VIDEO, 'out');
 const args = process.argv.slice(2);
 const audioOnly = args.includes('--audio');
 const named = args.filter(a => !a.startsWith('--'));
-const FEATURES = ['one-command', 'journeys', 'culprit', 'components', 'proof', 'budgets', 'pull-requests', 'ai', 'editor', 'dashboard', 'json', 'safe', 'fix'].map(f => `feature-${f}`);
+const FEATURES = ['one-command', 'journeys', 'culprit', 'components', 'proof', 'budgets', 'pull-requests', 'ai', 'editor', 'dashboard', 'json', 'safe', 'fix', 'compare'].map(f => `feature-${f}`);
 const ids = (named.length ? named : ['vscode', 'claude-code', 'mcp-server']).flatMap(id => (id === 'features' ? FEATURES : [id]));
 const GL = { gl: 'angle' }; // WebGL on the GPU
 const silent = id => id.startsWith('feature-');
@@ -33,7 +33,8 @@ const ffmpeg = (...a) => execFileSync(path.join(FF, 'ffmpeg'), ['-y', '-loglevel
 const webEncode = id =>
   silent(id)
     ? ffmpeg('-i', path.join(OUT, `${id}.mp4`), '-c:v', 'libx264', '-preset', 'slow', '-crf', '25', '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', path.join(OUT, 'web', `${id}.mp4`))
-    : ffmpeg('-i', path.join(OUT, `${id}.mp4`), '-c:v', 'libx264', '-preset', 'slow', '-crf', '21', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', path.join(OUT, 'web', `${id}.mp4`));
+    : // the launch film runs 2½ minutes: a little more compression keeps its web copy near 40 MB
+      ffmpeg('-i', path.join(OUT, `${id}.mp4`), '-c:v', 'libx264', '-preset', 'slow', '-crf', id === 'launch' ? '23' : '21', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', path.join(OUT, 'web', `${id}.mp4`));
 // swaps a new soundtrack into a rendered video, keeping its picture as it is
 const swapAudio = (file, wav, bitrate = '192k') => {
   const tmp = `${file}.tmp.mp4`;

@@ -75,5 +75,5 @@ keep it out of git.
 <p align="center">
   <a href="https://progen-labs.github.io/website/"><img alt="Progen Labs" src="https://progen-labs.github.io/website/brand/progen-seed-mark.png" height="72"></a>
   <br>
-  <sub>Spectra is a <a href="https://progen-labs.github.io/website/">Progen Labs</a> project: open source, nonprofit, always free.</sub>
+  <sub>Spectra is a <a href="https://progen-labs.github.io/website/">Progen Labs</a> project: independent, open source, always free.</sub>
 </p>

@@ -11,10 +11,10 @@ exact function, file and line, the evidence, and a suggested fix.
 Deep component-level attribution for **React, Next.js, Vue and Angular** (component names, render counts
 and per-component render/change-detection time; source files too, where the framework exposes them). For
 **Svelte and any other build**, a source-mapped generic profile still pinpoints the slow files and
-functions. A [Progen Labs](https://github.com/progen-labs) project — open source, non-profit, no
+functions. A [Progen Labs](https://github.com/progen-labs) project — independent, open source, no
 telemetry, no account required.
 
-**Watch the two-minute demo:** [progen-labs.github.io/website/#spectra/demo](https://progen-labs.github.io/website/#spectra/demo).
+**Watch the demo (2½ minutes):** [progen-labs.github.io/website/#spectra/demo](https://progen-labs.github.io/website/#spectra/demo).
 
 **Documentation:** the full guide, with annotated screenshots of every screen, is at
 [progen-labs.github.io/website](https://progen-labs.github.io/website/#spectra/docs/introduction).
@@ -299,7 +299,7 @@ and report generation work.
 
 ## License
 
-MIT © Progen Labs
+MIT © 2026 Sourav Debnath (Progen Labs)
 
 <p align="center">
   <a href="https://progen-labs.github.io/website/">
@@ -309,5 +309,5 @@ MIT © Progen Labs
     </picture>
   </a>
   <br>
-  <sub>Spectra is a <a href="https://progen-labs.github.io/website/">Progen Labs</a> project: open source, nonprofit, always free.</sub>
+  <sub>Spectra is a <a href="https://progen-labs.github.io/website/">Progen Labs</a> project: independent, open source, always free.</sub>
 </p>

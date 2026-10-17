@@ -1,4 +1,4 @@
-// The twelve feature scenes, in 3D. Each is resolution-independent and timed
+// The feature scenes, in 3D. Each is resolution-independent and timed
 // in seconds: the website's feature loops play them on their own (loop: true
 // assembles the scene and takes it apart, so the clip loops seamlessly) and
 // the launch film plays them inside its chapters. Every number is real
@@ -574,6 +574,176 @@ export const FixHarness = ({ loop, fps = 30 }) => {
   );
 };
 
+// 14 — Compare two commits: the dashboard puts the recordings of two commits
+// side by side and exports the comparison as PDF. Each report then comes apart
+// in 3D: its sections lift off the page one by one, each with a callout saying
+// what it shows, and settle back. The summary first, then the detailed
+// report's Files page, row by row. Real screens and real PDF pages
+// (scripts/record-compare.mjs): the demo app before and after the fixes
+// Claude Code made in the fix-harness bench.
+const PX = { w: 1190, h: 1684 }; // the PDF page renders, in pixels
+const PAGE_W = 2.7;
+const PAGE_H = (PAGE_W * PX.h) / PX.w;
+const SUMMARY_PARTS = [
+  { box: [70, 80, 1120, 190], title: 'The report', text: 'App, commits and report type' },
+  { box: [70, 190, 1120, 505], title: 'The two commits', text: 'Hash, author, date and message' },
+  { box: [70, 515, 1120, 700], title: 'The verdict', text: 'Better or worse, and how sure' },
+  { box: [70, 715, 1120, 990], title: 'Highlights', text: 'The changes that matter most' },
+  { box: [70, 1005, 1120, 1545], title: 'Key metrics', text: 'Before, after and noise range' },
+];
+const FILE_PARTS = [
+  { box: [70, 402, 1120, 520], title: 'src/Row.jsx', text: 'Render time 1.44 s → 24.6 ms, −98%' },
+  { box: [70, 527, 1120, 646], title: 'src/heavy.js', text: 'CPU time 1.42 s → 22.9 ms, −98%' },
+  { box: [70, 652, 1120, 772], title: 'src/main.jsx', text: 'Render time 8.2 → 2.3 ms, −72%' },
+];
+const T = { tiles: 0.15, verdict: 1.2, retreat: [4.5, 5.4], summaryIn: 4.9, partsAt: 6.0, partGap: 0.95, settle: 11.2, aside: 12.1, fanAt: 12.5, filesIn: 13.9, rowsAt: 15.0, rowGap: 0.9, rowsSettle: 18.4 };
+export const COMPARE_TIMES = T; // the launch film times its sound to these
+const pxRect = ([x0, y0, x1, y1]) => {
+  const k = PAGE_W / PX.w;
+  return { w: (x1 - x0) * k, h: (y1 - y0) * k, x: ((x0 + x1) / 2) * k - PAGE_W / 2, y: PAGE_H / 2 - ((y0 + y1) / 2) * k };
+};
+const Page = ({ tex, position, rotation, scale = 1, children }) => (
+  <group position={position} rotation={rotation} scale={scale}>
+    <mesh geometry={rounded(PAGE_W + 0.05, PAGE_H + 0.05, 0.03, 0.02)} material={glossy('#dfe5f0')} castShadow />
+    <mesh position={[0, 0, 0.017]}>
+      <planeGeometry args={[PAGE_W, PAGE_H]} />
+      <meshBasicMaterial map={tex} toneMapped={false} />
+    </mesh>
+    {children}
+  </group>
+);
+/** A page whose sections lift off it (lifts[i]: 0 on the page, 1 out), each with a callout. */
+const ExplodedPage = ({ tex, parts, lifts, ...page }) => {
+  const partTex = React.useMemo(
+    () =>
+      parts.map(({ box: [x0, y0, x1, y1] }) => {
+        const t = tex.clone();
+        t.repeat.set((x1 - x0) / PX.w, (y1 - y0) / PX.h);
+        t.offset.set(x0 / PX.w, 1 - y1 / PX.h);
+        t.needsUpdate = true;
+        return t;
+      }),
+    [tex, parts],
+  );
+  return (
+    <Page tex={tex} {...page}>
+      {parts.map((part, i) => {
+        const l = lifts[i];
+        if (l <= 0.002) return null;
+        const r = pxRect(part.box);
+        const side = i % 2 ? 1 : -1;
+        const edge = side * (PAGE_W / 2 + 0.3 * l);
+        return (
+          <group key={part.title}>
+            {/* the slot it leaves on the page */}
+            <mesh position={[r.x, r.y, 0.019]}>
+              <planeGeometry args={[r.w, r.h]} />
+              <meshBasicMaterial color="#e8edf6" transparent opacity={Math.min(1, l) * 0.93} toneMapped={false} depthWrite={false} />
+            </mesh>
+            {/* the section, lifted toward the viewer */}
+            <group position={[r.x + side * 0.3 * l, r.y, 0.02 + 0.8 * l]} scale={1 + 0.08 * l}>
+              <mesh geometry={rounded(r.w + 0.03, r.h + 0.03, 0.02, 0.012)} material={glossy('#f4f6fb')} castShadow />
+              <mesh position={[0, 0, 0.011]}>
+                <planeGeometry args={[r.w, r.h]} />
+                <meshBasicMaterial map={partTex[i]} toneMapped={false} />
+              </mesh>
+            </group>
+            {/* what it shows */}
+            <Beam from={[edge, r.y, 0.8 * l]} to={[side * (PAGE_W / 2 + 0.38), r.y, 0.85]} radius={0.008} progress={Math.min(1, l)} />
+            <Tile
+              position={[side * (PAGE_W / 2 + 1.55), r.y, 0.85]}
+              scale={Math.max(0.0001, Math.min(1.05, l))}
+              w={2.35}
+              h={0.62}
+              d={0.12}
+              color="#141d3d"
+              emissive="#1f6fff"
+              emissiveIntensity={0.08}
+              lines={[ui(part.title, '#ffffff', 0.15), ui(part.text, '#a9c4ec', 0.1, { weight: 500 })]}
+            />
+          </group>
+        );
+      })}
+    </Page>
+  );
+};
+const COMPARE_FILES = ['compare/verdict.png', 'compare/summary-1.png', ...[1, 2, 3, 4, 5].map(n => `compare/detailed-${n}.png`)];
+// the world, inside the canvas (textures load there)
+const CompareWorld = ({ loop }) => {
+  const { s, sp, ramp } = useClock();
+  const tex = useTextures(COMPARE_FILES);
+  if (!tex) return null;
+  const [verdict, summary, ...detailed] = tex;
+  const lerp = (a, b, t) => (Array.isArray(a) ? a.map((v, i) => v + (b[i] - v) * t) : a + (b - a) * t);
+  const soft = { damping: 15, stiffness: 95, mass: 0.9 };
+  const lift = (at, settleAt) => sp(at, soft) * (1 - sp(settleAt, soft));
+
+  // the dashboard: two commits, the verdict between them, then it steps back
+  const back = ramp(...T.retreat);
+  const commit = (at, x, label, hash, message) => {
+    const drop = sp(at, { damping: 11, stiffness: 120, mass: 0.8 });
+    return <Tile w={2.3} h={0.98} position={[x, 3.5 + (1 - drop) * 4, -0.7]} color="#1a2650" lines={[mono(label, '#7fd8ff', 0.11), mono(hash, '#ffffff', 0.3, { weight: 700 }), ui(message, '#a9b8d8', 0.12, { weight: 500 })]} />;
+  };
+  const vw = 4.6, vh = (vw * 575) / 2106;
+  const rise = sp(T.verdict, { damping: 14, stiffness: 110, mass: 0.8 });
+  const source = [4.4, 4.9, -4.0]; // where the PDFs come from once the dashboard has stepped back
+  const gone = ramp(T.fanAt + 0.6, T.fanAt + 1.6); // and then it leaves
+
+  // the summary: in, apart, together again, aside
+  const into = sp(T.summaryIn, soft);
+  const aside = sp(T.aside, soft);
+  const files = sp(T.filesIn, soft);
+  const summaryPos = lerp(lerp(lerp(source, [0, 1.95, 1.4], into), [-3.05, 1.85, -0.3], aside), [-5.6, 1.3, -3.6], files);
+  const summaryLifts = SUMMARY_PARTS.map((_, i) => lift(T.partsAt + i * T.partGap, T.settle + (SUMMARY_PARTS.length - 1 - i) * 0.08));
+
+  // the detailed report fans out; its Files page comes forward and comes apart
+  const fan = detailed.map((t, i) => {
+    const out = sp(T.fanAt + i * 0.15, soft);
+    const fanned = lerp(source, [2.75 + (i - 2) * 0.2, 1.85, -0.35 + i * 0.05], out);
+    return { t, out, pos: i < 4 ? lerp(fanned, [5.6 + (i - 2) * 0.2, 1.3, -3.6 + i * 0.05], files) : fanned, rot: [0, -0.32 * out, (i - 2) * -0.05 * out] };
+  });
+  const filesFan = fan[4];
+  const rowLifts = FILE_PARTS.map((_, i) => lift(T.rowsAt + i * T.rowGap, T.rowsSettle + (FILE_PARTS.length - 1 - i) * 0.08));
+
+  return (
+    <>
+      {/* in the film the dashboard sits right of the caption; on its own (a loop) it is centred */}
+      <group position={lerp(lerp([loop ? 0.6 : 2.0, 0, 0], [5.2, 5.2, -4.6], back), [9, 7, -8], gone)} scale={1 - 0.62 * back}>
+        {commit(T.tiles, -0.35, 'BEFORE · BASE COMMIT', '742d417', 'Product list with a live ticker')}
+        {commit(T.tiles + 0.25, 2.45, 'AFTER · UNDER REVIEW', 'e94a922', 'Memoise rows, move the ticker')}
+        <Beam from={[0.8, 3.5, -0.7]} to={[1.3, 3.5, -0.7]} radius={0.014} progress={ramp(0.8, 1.2)} />
+        {rise > 0.01 && <Screen tex={verdict} w={vw} h={vh} position={[0.75, -1 + rise * 2.9, 0]} rotation={[0.04, -0.08, 0]} />}
+      </group>
+
+      {into > 0.01 && (
+        <ExplodedPage tex={summary} parts={SUMMARY_PARTS} lifts={summaryLifts} position={summaryPos} rotation={[0, 0.3 * aside, 0]} scale={lerp(0.2 + 0.8 * into, 0.62, aside)} />
+      )}
+      {aside > 0.5 && files < 0.98 && <Chip text="PDF summary · 4 pages" position={[-3.05, 3.25, -0.3]} scale={sp(T.aside + 0.3) * (1 - files)} w={2.5} h={0.42} size={0.16} color={PAL.blue} />}
+
+      {fan.map((p, i) =>
+        p.out > 0.01 && i < 4 ? <Page key={i} tex={p.t} position={p.pos} rotation={p.rot} scale={0.2 + 0.42 * p.out} /> : null,
+      )}
+      {filesFan.out > 0.01 && (
+        <ExplodedPage
+          tex={filesFan.t}
+          parts={FILE_PARTS}
+          lifts={rowLifts}
+          position={lerp(filesFan.pos, [0, 1.95, 1.4], files)}
+          rotation={lerp(filesFan.rot, [0, 0, 0], files)}
+          scale={lerp(0.2 + 0.42 * filesFan.out, 1, files)}
+        />
+      )}
+      {s > T.fanAt + 0.4 && files < 0.98 && <Chip text="Detailed report · 10 pages" position={[2.75, 3.25, -0.3]} scale={sp(T.fanAt + 0.6) * (1 - files)} w={2.9} h={0.42} size={0.16} color={PAL.violet} />}
+      {s > T.rowsAt - 0.6 && <Chip text="What improved, file by file" position={[0, 4.18, 1.4]} scale={sp(T.rowsAt - 0.5) * (1 - sp(T.rowsSettle + 0.6))} w={3.3} h={0.46} size={0.18} color="#0a5c3e" />}
+    </>
+  );
+};
+export const CompareCommits = ({ loop }) => (
+  <Shell loop={loop} cam={[0, 2.3, 10.6]} target={[0, 1.85, 0]} sway={0.05}>
+    <CompareWorld loop={loop} />
+  </Shell>
+);
+
 export const FEATURE_SCENES = {
   'one-command': OneCommand,
   journeys: Journeys,
@@ -588,4 +758,5 @@ export const FEATURE_SCENES = {
   json: JsonOut,
   safe: Safe,
   fix: FixHarness,
+  compare: CompareCommits,
 };

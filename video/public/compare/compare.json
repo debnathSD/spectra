@@ -1,0 +1,19 @@
+{
+  "before": "742d417",
+  "after": "e94a922",
+  "author": "Demo Developer",
+  "summaryPages": 4,
+  "detailedPages": 10,
+  "recordings": {
+    "742d417": [
+      "20261017T111444-load",
+      "20261017T111448-load",
+      "20261017T111452-load"
+    ],
+    "e94a922": [
+      "20261017T111459-load",
+      "20261017T111503-load",
+      "20261017T111507-load"
+    ]
+  }
+}

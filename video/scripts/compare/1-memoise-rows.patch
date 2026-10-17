@@ -1,0 +1,21 @@
+diff --git a/src/main.jsx b/src/main.jsx
+index e103c7b..fcc4656 100644
+--- a/src/main.jsx
++++ b/src/main.jsx
+@@ -25,7 +25,6 @@ function App() {
+     return () => clearInterval(id);
+   }, []);
+ 
+-  const RowComponent = fixed ? MemoRow : Row;
+   const WastedComponent = fixed ? MemoWasted : Wasted;
+   return (
+     <div>
+@@ -52,7 +51,7 @@ function App() {
+       {fixed && <Chart tick={tick} />}
+       <div ref={list}>
+         {Array.from({ length: 120 }, (_, i) => (
+-          <RowComponent key={i} index={i} onPick={fixed ? onPick : () => {}} />
++          <MemoRow key={i} index={i} onPick={onPick} />
+         ))}
+       </div>
+     </div>
