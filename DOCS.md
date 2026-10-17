@@ -521,8 +521,10 @@ a thin client: every number comes from the Spectra CLI with `--json`, run in the
   extension inside an isolated VS Code (downloaded by `@vscode/test-electron`) against the demo app: start it first
   with `npm run demo`. The suite profiles the page, checks the problems at `src/Row.jsx:3` and the `Row` CodeLens, and
   verifies against the baseline.
-- **Packaging**: `npx @vscode/vsce package --no-dependencies` produces `spectra-<version>.vsix`. Publishing uses
-  `vsce publish` (VS Code Marketplace, publisher `progen-labs`) and `npx ovsx publish <vsix>` (Open VSX).
+- **Packaging**: `npx @vscode/vsce package --no-dependencies` produces `spectra-performance-<version>.vsix`.
+- **Publishing**: the extension is `progen-labs.spectra-performance` on the VS Code Marketplace (the name `spectra`
+  belongs to another publisher there). Upload the `.vsix` on the publisher's manage page, or run `vsce publish`;
+  for Open VSX, `npx ovsx publish <vsix>`.
 
 ## Configuration
 

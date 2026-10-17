@@ -219,12 +219,14 @@ baseline** after a change, golden paths, and the dashboard inside the editor. Re
 assistant writes to `.spectra/results` appear automatically, and on VS Code 1.101+ it offers Spectra's MCP server to
 agent mode. It runs your project's Spectra (0.2.0 or later) or `npx`.
 
-Until it is listed on the VS Code Marketplace and Open VSX, build and install it from this repository:
+Install **Spectra — frontend performance** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=progen-labs.spectra-performance), or from a terminal:
 
 ```bash
-cd vscode && npx @vscode/vsce package --no-dependencies
-code --install-extension spectra-performance-0.1.0.vsix
+code --install-extension progen-labs.spectra-performance
 ```
+
+For Cursor, Windsurf or VSCodium (Open VSX), until it is listed there: `cd vscode && npx @vscode/vsce package
+--no-dependencies`, then install `spectra-performance-0.1.0.vsix` with **Extensions: Install from VSIX…**.
 
 See the [VS Code guide](https://progen-labs.github.io/website/#spectra/docs/vscode).
 
