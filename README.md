@@ -223,7 +223,7 @@ Until it is listed on the VS Code Marketplace and Open VSX, build and install it
 
 ```bash
 cd vscode && npx @vscode/vsce package --no-dependencies
-code --install-extension spectra-0.1.0.vsix
+code --install-extension spectra-performance-0.1.0.vsix
 ```
 
 See the [VS Code guide](https://progen-labs.github.io/website/#spectra/docs/vscode).

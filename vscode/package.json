@@ -1,5 +1,5 @@
 {
-  "name": "spectra",
+  "name": "spectra-performance",
   "displayName": "Spectra — frontend performance",
   "description": "See the file, function and component that make your frontend slow, at the exact line in your editor, and verify every fix against a baseline. Free and open source.",
   "version": "0.1.0",

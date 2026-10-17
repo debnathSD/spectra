@@ -12,7 +12,7 @@ const step = (name, fn) => async () => {
 };
 
 exports.run = async () => {
-  const ext = vscode.extensions.getExtension('progen-labs.spectra');
+  const ext = vscode.extensions.getExtension('progen-labs.spectra-performance');
   assert.ok(ext, 'the extension is installed');
   const api = await ext.activate();
   const ws = vscode.workspace.workspaceFolders[0].uri.fsPath;

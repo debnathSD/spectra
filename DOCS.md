@@ -499,7 +499,7 @@ commit.
 
 ## VS Code extension
 
-`vscode/` is a VS Code extension (`progen-labs.spectra`, plain CommonJS, no build step, no runtime dependencies). It is
+`vscode/` is a VS Code extension (`progen-labs.spectra-performance`, plain CommonJS, no build step, no runtime dependencies). It is
 a thin client: every number comes from the Spectra CLI with `--json`, run in the workspace folder.
 
 - **Which CLI**: the `spectra.cliPath` setting, else the project's `node_modules/@progen-labs/spectra` (it refuses a
