@@ -179,6 +179,24 @@ Tools: `profile_page`, `verify_change` (re-profile and compare against a baselin
 `--allow-remote` to lift that), runs one browser at a time, and stops Chrome and any dev server it started when a
 call is cancelled. See the [MCP guide](https://progen-labs.github.io/website/#spectra/docs/mcp-server).
 
+## In VS Code
+
+The Spectra extension (`vscode/`) puts results where you work: every finding in the **Problems panel** at the file
+and line responsible, **CodeLens** above the costliest components and functions
+(`⚡ Spectra: Row · 7,200 renders · 1.44 s rendering`), headline numbers in the **status bar**, **Verify against
+baseline** after a change, golden paths, and the dashboard inside the editor. Results that the CLI or an AI
+assistant writes to `.spectra/results` appear automatically, and on VS Code 1.101+ it offers Spectra's MCP server to
+agent mode. It runs your project's Spectra (0.2.0 or later) or `npx`.
+
+Until it is listed on the VS Code Marketplace and Open VSX, build and install it from this repository:
+
+```bash
+cd vscode && npx @vscode/vsce package --no-dependencies
+code --install-extension spectra-0.1.0.vsix
+```
+
+See the [VS Code guide](https://progen-labs.github.io/website/#spectra/docs/vscode).
+
 ## Safe by default
 
 Auto-exploration never triggers destructive actions. Spectra detects controls that would mutate state —

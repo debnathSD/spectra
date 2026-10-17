@@ -1,0 +1,152 @@
+{
+  "name": "spectra",
+  "displayName": "Spectra — frontend performance",
+  "description": "See the file, function and component that make your frontend slow, at the exact line in your editor, and verify every fix against a baseline. Free and open source.",
+  "version": "0.1.0",
+  "publisher": "progen-labs",
+  "license": "MIT",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#0b1020",
+    "theme": "dark"
+  },
+  "homepage": "https://progen-labs.github.io/website/#spectra/docs/vscode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/progen-labs/spectra.git",
+    "directory": "vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/progen-labs/spectra/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Testing",
+    "Visualization",
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "performance",
+    "profiler",
+    "web vitals",
+    "react",
+    "next.js",
+    "vue",
+    "angular",
+    "re-renders",
+    "mcp"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "spectra.profilePage",
+        "title": "Profile page load",
+        "category": "Spectra",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "spectra.verify",
+        "title": "Verify against baseline",
+        "category": "Spectra"
+      },
+      {
+        "command": "spectra.runGoldenPaths",
+        "title": "Run golden paths",
+        "category": "Spectra"
+      },
+      {
+        "command": "spectra.setBaseline",
+        "title": "Choose baseline",
+        "category": "Spectra"
+      },
+      {
+        "command": "spectra.openDashboard",
+        "title": "Open dashboard",
+        "category": "Spectra"
+      },
+      {
+        "command": "spectra.clear",
+        "title": "Clear results",
+        "category": "Spectra"
+      },
+      {
+        "command": "spectra.showOutput",
+        "title": "Show output",
+        "category": "Spectra"
+      }
+    ],
+    "configuration": {
+      "title": "Spectra",
+      "properties": {
+        "spectra.url": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Page to profile, e.g. `http://localhost:3000/settings`. Leave empty and Spectra starts your dev server (`npm run dev`, `start`, `serve` or `develop`)."
+        },
+        "spectra.runs": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Recordings per profile. Spectra reports the medians, so more runs give steadier numbers."
+        },
+        "spectra.goldenPaths": {
+          "type": "integer",
+          "default": 6,
+          "minimum": 1,
+          "maximum": 12,
+          "description": "Maximum journeys for Run golden paths."
+        },
+        "spectra.problems.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show findings in the Problems panel and as squiggles at their lines."
+        },
+        "spectra.codeLens.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show render counts and timings above components and functions."
+        },
+        "spectra.watchResults": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show results that the CLI (`--out`) or an AI assistant writes to `.spectra/results`."
+        },
+        "spectra.mcp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Offer Spectra's MCP server to VS Code's agent mode (VS Code 1.101 or later)."
+        },
+        "spectra.cliPath": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Advanced: path to the Spectra CLI (`bin/spectra.js` or an executable). By default the extension uses the project's `@progen-labs/spectra`, or `npx @progen-labs/spectra@latest`."
+        }
+      }
+    },
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "spectra",
+        "label": "Spectra"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "test:e2e": "node test/e2e/run.js",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@vscode/test-electron": "^3.1.0"
+  }
+}

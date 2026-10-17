@@ -32,7 +32,8 @@
     "prepack": "npm run build",
     "demo": "vite --config fixtures/demo-app/vite.config.js",
     "profile": "node server/cli.js",
-    "test": "node --test \"server/**/test-*.js\""
+    "test": "node --test \"server/**/test-*.js\"",
+    "test:vscode": "npm --prefix vscode test"
   },
   "engines": {
     "node": ">=18"

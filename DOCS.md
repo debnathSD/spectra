@@ -472,6 +472,33 @@ Claude uses on its own when asked to make something faster) and `audit` (`/spect
 changes). Keep `plugin.json`'s `version` equal to the package version, and check changes with
 `claude plugin validate --strict ./plugins/spectra` and `claude plugin validate --strict .`.
 
+## VS Code extension
+
+`vscode/` is a VS Code extension (`progen-labs.spectra`, plain CommonJS, no build step, no runtime dependencies). It is
+a thin client: every number comes from the Spectra CLI with `--json`, run in the workspace folder.
+
+- **Which CLI**: the `spectra.cliPath` setting, else the project's `node_modules/@progen-labs/spectra` (it refuses a
+  version older than 0.2.0 and offers to update it), else `npx -y @progen-labs/spectra@latest`.
+- **Commands**: Profile page load (`performance --mode load --runs N --json --out`), Verify against baseline
+  (re-profile the baseline's URL, mode, runs and throttling, then `compare --json`), Choose baseline, Run golden
+  paths, Open dashboard (`spectra dashboard` on a free port, shown in the Simple Browser), Clear results, Show output.
+  Runs are cancellable from the progress notification; only one runs at a time.
+- **What it shows**: `lib/model.js` turns a result file into problems (one per finding and culprit location inside
+  the workspace; critical → Warning, warning → Information, info → Hint), CodeLens (components by render time,
+  then the project's own hot functions) and the status-bar text. It reads the result's most typical run for the
+  CodeLens, and every journey's report for golden-path results.
+- **Shared results**: it writes to `.spectra/results/vscode-*.json` and watches `**/.spectra/results/*.json`, so
+  results from the CLI (`--out`) or an AI assistant (the MCP server) appear in the editor too. The first profile in
+  a workspace becomes the baseline.
+- **Agent mode**: on VS Code 1.101+ it registers an MCP server definition provider (`spectra`) that starts
+  `spectra mcp --project <workspace>` (via `npx` when the project's Spectra is older than 0.3.0).
+- **Tests**: `npm test` in `vscode/` runs the unit tests of `lib/` (no VS Code needed). `npm run test:e2e` runs the
+  extension inside an isolated VS Code (downloaded by `@vscode/test-electron`) against the demo app: start it first
+  with `npm run demo`. The suite profiles the page, checks the problems at `src/Row.jsx:3` and the `Row` CodeLens, and
+  verifies against the baseline.
+- **Packaging**: `npx @vscode/vsce package --no-dependencies` produces `spectra-<version>.vsix`. Publishing uses
+  `vsce publish` (VS Code Marketplace, publisher `progen-labs`) and `npx ovsx publish <vsix>` (Open VSX).
+
 ## Configuration
 
 Budgets live in `spectra.config.json` (see [Budgets and exit codes](#budgets-and-exit-codes)). Environment variables,
@@ -898,6 +925,7 @@ fixtures/                  demo apps with deliberate performance bugs: demo-app 
                            "optimised" variant), vue-demo, angular-demo
 scripts/docs-screenshots.mjs   captures the annotated screenshots for the website docs (not published to npm)
 plugins/spectra/           the Claude Code plugin (skills + MCP server config)
+vscode/                    the VS Code extension (extension.js, lib/, tests)
 .claude-plugin/            the plugin marketplace (marketplace.json)
 server/testing/            fixtures shared by the tests (synthetic reports, throwaway projects)
 docs/                      images used by the README

@@ -5,3 +5,5 @@ reports/
 .vite-demo/
 .spectra/
 dist/
+.vscode-test/
+*.vsix
