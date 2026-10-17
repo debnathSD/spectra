@@ -1,8 +1,23 @@
 # Spectra's demo videos
 
-The short videos on the Spectra docs pages (VS Code extension, Claude Code
-plugin, MCP server), made with [Remotion](https://www.remotion.dev) at
-1920 × 1080 and 60 fps. This folder is not part of the npm package.
+Made with [Remotion](https://www.remotion.dev); this folder is not part of the
+npm package.
+
+- `launch`: the two-minute launch film (1920 × 1080, 60 fps), from the MCP
+  server and Claude Code to VS Code, the npm package, its CLI, frameworks and
+  open source. It is cut to the music, 64 bars at 128 BPM
+  (`src/launch/timeline.js`).
+- `vscode`, `claude-code`, `mcp-server`: the short videos on the docs pages.
+- `feature-*`: twelve silent 6-second loops (960 × 540, 30 fps) for the
+  feature cards on the Spectra page. They loop seamlessly.
+
+The 3D is real WebGL ([three.js](https://threejs.org) through
+`@remotion/three`): lit, clear-coated materials with soft shadows
+(`src/three/`). Falling, stacking and bouncing objects use rigid-body physics
+([cannon-es](https://github.com/pmndrs/cannon-es)), simulated once and
+replayed, so every frame renders the same on any machine. The feature scenes
+(`src/scenes3d/features.jsx`) are timed in seconds and play both as the loops
+and inside the film.
 
 Nothing in them is mocked up:
 
@@ -14,6 +29,9 @@ Nothing in them is mocked up:
   markers, and every number on screen comes from them.
 - **Claude Code** and **MCP server** are motion graphics around the real output
   of Spectra's MCP server on the demo app, kept in `src/data/session.js`.
+- Everything else in the film and the loops is real output too, in
+  `src/data/launch.js`: a one-command run on the demo app, its components, and
+  the docs' real compare, budget and pull request examples.
 - The music and sound effects are original, synthesised in code
   (`scripts/synth.js`), so there is nothing to license: an uplifting 128 BPM
   track in a clean corporate-tech style (piano, warm pads, a steady bass, soft
@@ -37,12 +55,12 @@ then:
 npm run record:vscode
 ```
 
-Render all three, or some, into `out/` (a master, a web copy in `out/web/`
-and a poster each):
+Render into `out/` (a master, a web copy in `out/web/` and a poster each):
 
 ```bash
-npm run render
-npm run render -- vscode
+npm run render              # the three docs videos
+npm run render -- launch    # the launch film
+npm run render -- features  # the twelve feature loops
 ```
 
 After a change to the music or sound effects only, `npm run render:audio`
@@ -50,7 +68,8 @@ renders just the sound again and swaps it into the existing videos.
 
 `npm run studio` opens Remotion Studio for live editing, and
 `npm run stills -- <id> <second> …` saves single frames to `out/stills/`.
-Copy the results to the website's `src/spectra-docs/videos/`.
+Copy the docs videos to the website's `src/spectra-docs/videos/`, the film to
+`src/assets/spectra/launch.mp4` and the loops to `src/assets/spectra/features/`.
 
 Remotion is free for individuals and non-profit organisations; see its
 [license](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md).

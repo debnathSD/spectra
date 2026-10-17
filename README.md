@@ -14,6 +14,8 @@ and per-component render/change-detection time; source files too, where the fram
 functions. A [Progen Labs](https://github.com/progen-labs) project — open source, non-profit, no
 telemetry, no account required.
 
+**Watch the two-minute demo:** [progen-labs.github.io/website/#spectra/demo](https://progen-labs.github.io/website/#spectra/demo).
+
 **Documentation:** the full guide, with annotated screenshots of every screen, is at
 [progen-labs.github.io/website](https://progen-labs.github.io/website/#spectra/docs/introduction).
 

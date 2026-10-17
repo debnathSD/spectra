@@ -11,6 +11,7 @@
     "render:audio": "node scripts/render.mjs --audio"
   },
   "dependencies": {
+    "@react-three/fiber": "8.18.0",
     "@remotion/bundler": "4.0.531",
     "@remotion/cli": "4.0.531",
     "@remotion/google-fonts": "4.0.531",
@@ -18,9 +19,12 @@
     "@remotion/motion-blur": "4.0.531",
     "@remotion/paths": "4.0.531",
     "@remotion/renderer": "4.0.531",
+    "@remotion/three": "4.0.531",
     "@remotion/transitions": "4.0.531",
+    "cannon-es": "0.20.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "remotion": "4.0.531"
+    "remotion": "4.0.531",
+    "three": "0.186.1"
   }
 }

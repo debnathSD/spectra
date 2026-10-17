@@ -16,11 +16,14 @@ export const BEAT = (FPS * 60) / BPM; // 28.125 frames
 export const beats = n => Math.round(n * BEAT);
 export const PICKUP = 2;
 
-export const fonts = {
-  ui: inter('normal', { weights: ['400', '500', '600', '700'], subsets: ['latin'] }).fontFamily,
-  display: grotesk('normal', { weights: ['500', '600', '700'], subsets: ['latin'] }).fontFamily,
-  mono: mono('normal', { weights: ['400', '500', '600'], subsets: ['latin'] }).fontFamily,
+const loaded = {
+  ui: inter('normal', { weights: ['400', '500', '600', '700'], subsets: ['latin'] }),
+  display: grotesk('normal', { weights: ['500', '600', '700'], subsets: ['latin'] }),
+  mono: mono('normal', { weights: ['400', '500', '600'], subsets: ['latin'] }),
 };
+export const fonts = Object.fromEntries(Object.entries(loaded).map(([k, v]) => [k, v.fontFamily]));
+/** Resolves once every brand font is registered (canvas text needs that). */
+export const fontsDone = () => Promise.all(Object.values(loaded).map(v => v.waitUntilDone()));
 
 export const C = {
   bg: '#060912',

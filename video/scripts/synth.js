@@ -72,10 +72,12 @@ const OSTINATO = [0, 2, 3, 2, 1, 2, 3, 2];
 
 /**
  * dur: length in seconds. endAt: when the end card lands (the drums stop and
- * the final chord rings out). pickup: beats before the downbeat.
+ * the final chord rings out). pickup: beats before the downbeat. breaks:
+ * [fromBar, toBar) ranges where the drums and bass rest (piano, pads and bell
+ * carry on), with a swell back into the beat.
  * The style: clean piano, warm pads, a steady eighth-note bass, soft drums.
  */
-window.renderMusic = async (dur, { bpm = 128, endAt = dur - 3, pickup = 2 } = {}) => {
+window.renderMusic = async (dur, { bpm = 128, endAt = dur - 3, pickup = 2, breaks = [] } = {}) => {
   const sr = 44100;
   const ctx = new OfflineAudioContext(2, Math.ceil(sr * dur), sr);
   const beat = 60 / bpm;
@@ -217,7 +219,9 @@ window.renderMusic = async (dur, { bpm = 128, endAt = dur - 3, pickup = 2 } = {}
     if (t0 >= endAt) break;
     const chord = CHORDS[b % 4];
     const barEnd = Math.min(t0 + bar, endAt);
-    const full = b >= 4; // the first four bars are half-time
+    const resting = breaks.some(([a, z]) => b >= a && b < z);
+    const full = b >= 4 && !resting; // the first four bars are half-time
+    if (breaks.some(([, z]) => b === z - 1)) swell(master, t0, t0 + bar, 0.07);
     const lastBar = t0 + bar >= endAt;
     pad(chord, t0, barEnd - t0);
     // piano: a bass note on the downbeat and the broken chord above
@@ -228,8 +232,9 @@ window.renderMusic = async (dur, { bpm = 128, endAt = dur - 3, pickup = 2 } = {}
       const accent = e % 2 === 0 ? 1 : 0.78;
       piano(chord.keys[OSTINATO[e]] + 12, t, accent * 0.85, 1.4);
     }
-    // the bass: steady eighths, slightly shortened
-    for (let e = 0; e < 8; e++) {
+    // the bass: steady eighths, slightly shortened (a long low note in a break)
+    if (resting) piano(chord.bass + 12, t0, 0.7, 2.4);
+    for (let e = 0; e < 8 && !resting; e++) {
       const t = t0 + e * eighth;
       if (t >= endAt - (lastBar ? beat : 0)) break;
       for (const [type, oct, peak, cut] of [['sawtooth', 12, 0.1, 420], ['sine', 0, 0.22, 0]]) {
@@ -256,7 +261,7 @@ window.renderMusic = async (dur, { bpm = 128, endAt = dur - 3, pickup = 2 } = {}
     // drums: soft kick (half-time first), a roomy rim on two and four, light hats
     for (let k = 0; k < 4; k++) {
       const t = t0 + k * beat;
-      if (t >= endAt - (lastBar ? beat : 0)) break; // a breath before the end
+      if (t >= endAt - (lastBar ? beat : 0) || resting) break; // a breath before the end
       if (full || k % 2 === 0) {
         const o = ctx.createOscillator();
         o.frequency.setValueAtTime(120, t);
@@ -289,7 +294,7 @@ window.renderMusic = async (dur, { bpm = 128, endAt = dur - 3, pickup = 2 } = {}
       if (full) for (const sx of [1, 3]) hit(drumBus, t + sx * (beat / 4), { type: 'bandpass', freq: 6500, q: 0.9, peak: 0.01, decay: 0.04, offset: sx * 0.21 + b * 0.05 });
     }
     // a gentle bell line in every other four-bar phrase once the drums are in
-    if (full && Math.floor(b / 4) % 2 === 1)
+    if ((full && Math.floor(b / 4) % 2 === 1) || resting)
       for (const [st, m, lenBeats] of chord.bell) {
         const t = t0 + st * beat;
         if (t >= endAt) break;

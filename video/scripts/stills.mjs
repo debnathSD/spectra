@@ -13,10 +13,10 @@ const dir = path.join(VIDEO, 'out', 'stills');
 fs.mkdirSync(dir, { recursive: true });
 if (!['impact.wav', `${id}.wav`].every(f => fs.existsSync(path.join(VIDEO, 'public', 'music', f)))) await makeMusic({ [id]: { seconds: 10 } });
 const serveUrl = await bundle({ entryPoint: path.join(VIDEO, 'src', 'index.jsx'), publicDir: path.join(VIDEO, 'public') });
-const composition = await selectComposition({ serveUrl, id });
+const composition = await selectComposition({ serveUrl, id, chromiumOptions: { gl: 'angle' } });
 console.log(`${id}: ${(composition.durationInFrames / composition.fps).toFixed(1)} s`);
 for (const sec of seconds) {
   const output = path.join(dir, `${id}-${sec}.png`);
-  await renderStill({ composition, serveUrl, output, frame: Math.min(composition.durationInFrames - 1, Math.round(Number(sec) * composition.fps)) });
+  await renderStill({ composition, serveUrl, output, frame: Math.min(composition.durationInFrames - 1, Math.round(Number(sec) * composition.fps)), chromiumOptions: { gl: 'angle' } });
 }
 console.log('done');

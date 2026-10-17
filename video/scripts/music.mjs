@@ -18,8 +18,8 @@ export async function makeMusic(tracks) {
   try {
     const page = await browser.newPage();
     await page.addScriptTag({ path: path.join(VIDEO, 'scripts', 'synth.js') });
-    for (const [id, { seconds, endAt }] of Object.entries(tracks)) {
-      const wav = await page.evaluate((d, e) => window.renderMusic(d, { endAt: e }), seconds, endAt ?? seconds - 3);
+    for (const [id, { seconds, endAt, breaks }] of Object.entries(tracks)) {
+      const wav = await page.evaluate((d, e, b) => window.renderMusic(d, { endAt: e, breaks: b }), seconds, endAt ?? seconds - 3, breaks ?? []);
       fs.writeFileSync(path.join(MUSIC, `${id}.wav`), Buffer.from(wav, 'base64'));
     }
     for (const name of await page.evaluate(() => window.SFX_NAMES)) {
