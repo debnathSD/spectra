@@ -7,3 +7,4 @@ reports/
 dist/
 .vscode-test/
 *.vsix
+bench/last-run.json

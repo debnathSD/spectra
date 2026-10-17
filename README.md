@@ -212,6 +212,36 @@ Tools: `profile_page`, `verify_change` (re-profile and compare against a baselin
 `--allow-remote` to lift that), runs one browser at a time, and stops Chrome and any dev server it started when a
 call is cancelled. See the [MCP guide](https://progen-labs.github.io/website/#spectra/docs/mcp-server).
 
+## The AI fix harness
+
+`spectra fix` hands the costliest findings in your own code to a coding agent, one at a time, and keeps a change only
+when your checks still pass and Spectra measures the page faster beyond run-to-run noise. Kept changes arrive as
+commits on a new branch, `spectra/fix-<time>`, for you to review; everything else is undone.
+
+```bash
+npx spectra fix                       # Claude Code (signed in) fixes up to 3 findings
+npx spectra fix --check "npm run e2e" --max-fixes 5
+npx spectra fix --agent "./my-agent.sh"   # any agent: instructions on stdin
+```
+
+The harness, not the agent, makes every decision:
+
+- **Isolation.** It works in a git worktree of your last commit, with its own dev server. Your working tree is never
+  touched, and nothing is pushed or merged.
+- **Your checks first.** Your test, type-check and build scripts (or `--check`, which can test the running app at
+  `$SPECTRA_FIX_URL`) must pass before any change and after each one. A faster page that breaks is undone.
+- **Scope rules.** A change may not touch `package.json`, lockfiles, configuration, tests or CI, delete files, or
+  exceed 150 lines.
+- **Proof.** The change is kept only if `spectra compare` says *improved* with medium or high confidence and no new
+  critical finding; with low confidence it measures again.
+- **A record.** Each kept commit carries its evidence; `.spectra/fix/<time>/report.md` summarises the session, and a
+  history skips findings that failed before.
+
+By default the agent is Claude Code in headless mode, allowed only to read and edit files (no shell, no web, no MCP),
+with a spending cap per finding. A test bench (`npm run bench`) checks the harness's decisions in CI: a real fix is
+kept, a "faster" change that breaks the page is caught, a cosmetic change doesn't count, and an edit to
+`package.json` is refused. See [the AI fix harness](https://progen-labs.github.io/website/#spectra/docs/harness).
+
 ## In VS Code
 
 The Spectra extension (`vscode/`) puts results where you work: every finding in the **Problems panel** at the file

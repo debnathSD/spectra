@@ -6,6 +6,7 @@
  *   spectra compare <before> <after>                         before vs after, noise-aware
  *   spectra reports                                          list saved reports
  *   spectra mcp [--project <dir>]                            MCP server for AI tools (stdio)
+ *   spectra fix [options]                                    the AI fix harness: fix, check, verify
  *   spectra dashboard                                        open the dashboard UI
  *   spectra --help                                           show this help
  *   spectra --version                                        print the version
@@ -43,6 +44,10 @@ Usage:
   spectra mcp [--project <dir>] [--allow-remote]
                                   Run as an MCP server (stdio) for Claude Code,
                                   Cursor, VS Code and other AI tools
+  spectra fix [options]           The AI fix harness: an agent fixes the costliest
+                                  findings in a copy of your code; a change is kept
+                                  only if your checks pass and it measures faster
+                                  (spectra fix --help for its options)
   spectra dashboard               Open the Spectra dashboard UI
   spectra --help, -h              Show this help
   spectra --version, -v           Print the version
@@ -95,6 +100,7 @@ Examples:
   spectra performance --quick --runs 5 --out before.json
   spectra performance --quick --runs 5 --out after.json
   spectra compare before.json after.json           # did the change help?
+  spectra fix --max-fixes 3                        # let an agent fix them, verified
   spectra performance --json | jq .summary         # pipe it anywhere
 `;
 
@@ -300,6 +306,14 @@ switch (command) {
       });
     break;
   }
+  case 'fix':
+    // In-process, in the user's project: the harness manages its own copy,
+    // dev server and child processes (server/fix/cli.js).
+    import('../server/fix/cli.js').catch(err => {
+      console.error(`spectra: ${err.message}`);
+      process.exit(1);
+    });
+    break;
   case 'mcp':
     // In-process: stdin/stdout are the protocol channel, and the working
     // directory stays the user's (the project, unless --project or the

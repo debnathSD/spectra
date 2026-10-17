@@ -36,6 +36,7 @@ installed package, use `npx spectra dashboard` wherever it says `npm run dev`. E
 - [Configuration](#configuration)
 - [How it works and how accurate it is](#how-it-works-and-how-accurate-it-is)
 - [Technical deep dive: capture, correlation and report generation](#technical-deep-dive-capture-correlation-and-report-generation)
+- [The AI fix harness](#the-ai-fix-harness)
 - [Privacy and safety](#privacy-and-safety)
 - [Project layout and contributing](#project-layout-and-contributing)
 
@@ -906,6 +907,39 @@ severity: critical, then warning, then info), so the single most expensive, most
   wrapped in multiple HOCs, can occasionally match a different, coincidentally-matching definition in the same
   file.
 
+## The AI fix harness
+
+`spectra fix` (`server/fix/`) runs a coding agent in a loop and keeps only the changes that Spectra can prove. The
+agent edits; everything else is the harness's code:
+
+- `cli.js`: options, the session directory (`.spectra/fix/<time>/`), the dev server, cleanup on exit or a signal,
+  the report and the history. Profiles and comparisons run the regular CLI with `--json`, in the copy, with
+  `PERF_FRONTEND_DIR` and `PERF_REPORTS_DIR` pointing at the copy and the session.
+- `harness.js`: the loop, with every dependency passed in (profile, compare, agent, workspace, checks), so it is tested
+  without a browser or a model. Checks must pass before any change; then for each finding: agent → scope rules →
+  checks → profile → compare → keep (commit) or undo; low confidence measures again once. Each fix is measured against
+  the previous kept state, and the session ends with baseline → final.
+- `policy.js`: which findings to attempt (critical/warning, in the project's own files, one per file and line, minus
+  earlier failures unless `--retry`), the scope rules (no `package.json`, lockfiles, configuration, tests, CI or
+  deletions; at most 150 lines), the keep rule (improved, confidence medium or high, no new critical finding) and the
+  agent's instructions.
+- `workspace.js`: the git worktree of `HEAD` on `spectra/fix-<time>`, `node_modules` linked in (or `--install`),
+  `.spectra/` added to `.git/info/exclude`, diffs, commits of exactly the changed files, `reset --hard` + `clean` to
+  undo, removal (the branch stays only if it has commits).
+- `agent.js`: Claude Code headless (`-p`, `acceptEdits`, tools Read/Edit/Write/Glob/Grep, Bash/WebFetch/WebSearch
+  disallowed, `--strict-mcp-config`, `--no-session-persistence`, `--max-budget-usd`), or any `--agent` command (the
+  instructions on stdin and in `$SPECTRA_FIX_PROMPT_FILE`, the finding in `$SPECTRA_FIX_FINDING`). Errors such as
+  "not logged in" stop the session at once.
+- `checks.js`: detected checks (`test` unless npm's placeholder, a type-check script, `build`) or `--check`, run with
+  `CI=1` and `$SPECTRA_FIX_URL`.
+- `report.js`: the Markdown report.
+
+`server/fix/test-fix.js` covers the rules, the loop with fakes and the git copy in a throwaway repository. The test
+bench (`bench/`, `npm run bench`) runs the real thing against a copy of the React demo app with a behaviour check, and
+a scripted agent applies known changes: `memoize` must be kept, `breaks-page` must fail the checks, `no-gain` must not
+count, `touches-config` must be refused. `--agent claude` (or any command) scores a real agent instead. CI runs the
+scripted bench on every push.
+
 ## Privacy and safety
 
 - Everything runs locally. The UI server binds to `localhost`; **don't pass `--host`** unless you accept exposing your
@@ -919,6 +953,8 @@ severity: critical, then warning, then info), so the single most expensive, most
 - The tool's private Chrome profile (in your temp directory, under `spectra-chrome/`) can contain cookies for the app
   after you sign in. It is separate from your own Chrome profile and never inside your repository.
 - `spectra dashboard` listens on `127.0.0.1` only.
+- `spectra fix` sends nothing itself, but the coding agent it runs (Claude Code by default) reads the files it works
+  on and sends them to its provider. Its changes stay on a local branch until you merge them.
 
 ## Project layout and contributing
 
@@ -936,6 +972,7 @@ server/cli.js              single-page profiles (--quick, --mode, --runs, --scen
 server/compare-cli.js      spectra compare
 server/reports-cli.js      spectra reports
 server/mcp.js              spectra mcp: the MCP server (stdio)
+server/fix/                spectra fix: the AI fix harness (cli, harness loop, policy, workspace, agent, checks, report)
 server/args.js, output.js, project-config.js   argv parsing; --json/--out and exit codes; spectra.config.json
 server/api.js              the dashboard's /api/* endpoints + Server-Sent Events
 server/plugin.js           mounts that API in the Vite dev server (npm run dev)
@@ -954,6 +991,7 @@ scripts/docs-screenshots.mjs   captures the annotated screenshots for the websit
 plugins/spectra/           the Claude Code plugin (skills + MCP server config)
 vscode/                    the VS Code extension (extension.js, lib/, tests)
 action.yml, action/        the GitHub Action (run.mjs, summary.mjs, test-summary.js)
+bench/                     the AI fix harness's test bench (npm run bench; not published to npm)
 video/                     the docs' demo videos, made with Remotion from a real VS Code recording and real MCP
                            output (own package.json; not published to npm; see video/README.md)
 .github/workflows/ci.yml   CI: tests, then the action on the demo app
