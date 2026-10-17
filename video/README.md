@@ -14,9 +14,11 @@ Nothing in them is mocked up:
   markers, and every number on screen comes from them.
 - **Claude Code** and **MCP server** are motion graphics around the real output
   of Spectra's MCP server on the demo app, kept in `src/data/session.js`.
-- The music (an uplifting 128 BPM track) and sound effects are original,
-  synthesised in code (`scripts/synth.js`), so there is nothing to license.
-  Every cut lands on a beat, and the final chord hits as the end card lands.
+- The music and sound effects are original, synthesised in code
+  (`scripts/synth.js`), so there is nothing to license: an uplifting 128 BPM
+  track in a clean corporate-tech style (piano, warm pads, a steady bass, soft
+  drums). Every cut lands on a beat, the final chord hits as the end card
+  lands, and the sound is normalised to -16 LUFS.
 
 ## Make them
 
@@ -35,12 +37,16 @@ then:
 npm run record:vscode
 ```
 
-Render all three, or some, into `out/` (an MP4 and a poster each):
+Render all three, or some, into `out/` (a master, a web copy in `out/web/`
+and a poster each):
 
 ```bash
 npm run render
 npm run render -- vscode
 ```
+
+After a change to the music or sound effects only, `npm run render:audio`
+renders just the sound again and swaps it into the existing videos.
 
 `npm run studio` opens Remotion Studio for live editing, and
 `npm run stills -- <id> <second> …` saves single frames to `out/stills/`.
