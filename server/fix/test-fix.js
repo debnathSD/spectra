@@ -70,7 +70,8 @@ test('tells the agent the finding and the rules', () => {
 });
 
 // --- the loop, with fakes
-function fakes({ agentChanges, checks = [true, true, true, true], verdicts }) {
+const bothFindings = () => [finding('row-render'), finding('heavy', { file: 'src/heavy.js', line: 2, culprits: [] })];
+function fakes({ agentChanges, checks = [true, true, true, true], verdicts, measured = bothFindings }) {
   const calls = { commits: [], undos: 0, profiles: 0, compares: [] };
   let pending = [];
   let checkRun = 0;
@@ -91,7 +92,7 @@ function fakes({ agentChanges, checks = [true, true, true, true], verdicts }) {
       workspace,
       checks: [{ name: 'npm test' }],
       runChecks: async () => [{ name: 'npm test', ok: checks[checkRun++] ?? true, tail: 'expected 120 rows' }],
-      profile: async label => ((calls.profiles++), { file: `${label}.json`, result: { url: 'http://localhost:5199', summary: {}, findings: [finding('row-render'), finding('heavy', { file: 'src/heavy.js', line: 2, culprits: [] })] } }),
+      profile: async label => ((calls.profiles++), { file: `${label}.json`, result: { url: 'http://localhost:5199', summary: {}, findings: measured(label) } }),
       compare: async (before, after) => (calls.compares.push([before, after]), verdicts[verdictRun++] || comparison('neutral')),
     },
   };
@@ -110,6 +111,21 @@ test('keeps a change that passes the checks and measures faster, and builds on i
   assert.deepEqual(calls.compares[2], [['baseline.json'], ['after 1.json']], 'the overall comparison starts from the baseline');
   assert.equal(s.final.verdict, 'improved');
   assert.match(reportMarkdown({ ...s, runs: 3, branch: 'spectra/fix-x' }), /1 of 2 findings fixed/);
+});
+
+test('skips a finding that an earlier kept change already resolved', async () => {
+  // the memoised row also stops the hot file: after the first fix, neither is measured
+  const measured = label => (label === 'baseline' ? bothFindings() : []);
+  const { calls, options } = fakes({ agentChanges: [edit, edit], verdicts: [comparison('improved'), comparison('improved')], measured });
+  let asked = 0;
+  const run = options.agent.run;
+  options.agent.run = (...a) => (asked++, run(...a));
+  const s = await runFix(options);
+  assert.equal(asked, 1, 'the agent is not asked about the resolved finding');
+  assert.deepEqual(s.attempts.map(a => a.outcome), ['kept']);
+  assert.deepEqual(s.skipped, [{ title: 'heavy is slow', reason: 'already resolved by an earlier kept change' }]);
+  assert.equal(calls.profiles, 2, 'baseline and one measurement');
+  assert.match(reportMarkdown({ ...s, runs: 3, branch: 'spectra/fix-x' }), /heavy is slow: already resolved by an earlier kept change/);
 });
 
 test('undoes a change whose checks fail, without measuring it', async () => {

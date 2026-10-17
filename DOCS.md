@@ -918,7 +918,8 @@ agent edits; everything else is the harness's code:
 - `harness.js`: the loop, with every dependency passed in (profile, compare, agent, workspace, checks), so it is tested
   without a browser or a model. Checks must pass before any change; then for each finding: agent → scope rules →
   checks → profile → compare → keep (commit) or undo; low confidence measures again once. Each fix is measured against
-  the previous kept state, and the session ends with baseline → final.
+  the previous kept state, and the session ends with baseline → final. After a kept fix, a queued finding whose key
+  (`findingKey`) the new measurement no longer shows is skipped as already resolved, not handed to the agent.
 - `policy.js`: which findings to attempt (critical/warning, in the project's own files, one per file and line, minus
   earlier failures unless `--retry`), the scope rules (no `package.json`, lockfiles, configuration, tests, CI or
   deletions; at most 150 lines), the keep rule (improved, confidence medium or high, no new critical finding) and the
@@ -938,7 +939,9 @@ agent edits; everything else is the harness's code:
 bench (`bench/`, `npm run bench`) runs the real thing against a copy of the React demo app with a behaviour check, and
 a scripted agent applies known changes: `memoize` must be kept, `breaks-page` must fail the checks, `no-gain` must not
 count, `touches-config` must be refused. `--agent claude` (or any command) scores a real agent instead. CI runs the
-scripted bench on every push.
+scripted bench on every push. The first real-agent run (Claude Code, 17 October 2026) kept two of three fixes and cut
+JavaScript CPU time from 1.51 s to 82.5 ms for $0.44; its one wasted attempt, on a finding the first fix had already
+cleared, is why the loop now skips resolved findings.
 
 ## Privacy and safety
 

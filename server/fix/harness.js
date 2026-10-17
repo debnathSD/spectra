@@ -4,6 +4,7 @@
  * Everything it touches is passed in (profile, compare, agent, workspace,
  * checks), so the loop itself is tested without a browser or a model.
  */
+import { findingKey } from '../../shared/compare.js';
 import { fixPrompt, judge, rankFindings, scopeProblem } from './policy.js';
 
 // agent errors no other finding would get past: stop instead of trying them all
@@ -34,6 +35,7 @@ export async function runFix(o) {
   const baseline = await profile('baseline');
   session.baseline = { file: baseline.file, summary: baseline.result.summary, url: baseline.result.url };
   let current = [baseline.file];
+  let present = null; // finding keys the latest kept change still measures
 
   const { candidates, skipped } = rankFindings(baseline.result.findings, { exists: ws.exists, history, retry, max: maxFixes });
   session.skipped = skipped.map(s => ({ title: s.finding.title, reason: s.reason }));
@@ -46,6 +48,12 @@ export async function runFix(o) {
   for (const [i, f] of candidates.entries()) {
     if (signal?.aborted) break;
     const n = `${i + 1}/${candidates.length}`;
+    if (present && !present.has(f.key)) {
+      // one fix often clears several findings (a memoised row also stops its hot file)
+      session.skipped.push({ title: f.title, reason: 'already resolved by an earlier kept change' });
+      log(`[${n}] – ${f.title}: already resolved by an earlier kept change.`);
+      continue;
+    }
     const attempt = { finding: { title: f.title, file: f.file, line: f.line, severity: f.severity, impactMs: f.impactMs, key: f.key }, outcome: null, reason: '', changes: [] };
     session.attempts.push(attempt);
     const discard = (outcome, reason) => {
@@ -127,6 +135,7 @@ export async function runFix(o) {
     Object.assign(attempt, { outcome: 'kept', reason: verdict.reason });
     session.kept++;
     current = after.map(a => a.file);
+    present = new Set(after.flatMap(a => a.result.findings || []).map(findingKey));
     log(`[${n}] ✓ kept (${attempt.commit}): ${verdict.reason}`);
   }
 

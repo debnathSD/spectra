@@ -235,12 +235,13 @@ The harness, not the agent, makes every decision:
 - **Proof.** The change is kept only if `spectra compare` says *improved* with medium or high confidence and no new
   critical finding; with low confidence it measures again.
 - **A record.** Each kept commit carries its evidence; `.spectra/fix/<time>/report.md` summarises the session, and a
-  history skips findings that failed before.
+  history skips findings that failed before. A finding that an earlier kept fix already cleared is skipped too.
 
 By default the agent is Claude Code in headless mode, allowed only to read and edit files (no shell, no web, no MCP),
 with a spending cap per finding. A test bench (`npm run bench`) checks the harness's decisions in CI: a real fix is
 kept, a "faster" change that breaks the page is caught, a cosmetic change doesn't count, and an edit to
-`package.json` is refused. See [the AI fix harness](https://progen-labs.github.io/website/#spectra/docs/harness).
+`package.json` is refused. With Claude Code on the demo app, it kept two of three fixes and cut JavaScript CPU time
+from 1.51 s to 82.5 ms (−95%) for $0.44. See [the AI fix harness](https://progen-labs.github.io/website/#spectra/docs/harness).
 
 ## In VS Code
 
