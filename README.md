@@ -300,3 +300,14 @@ and report generation work.
 ## License
 
 MIT © Progen Labs
+
+<p align="center">
+  <a href="https://progen-labs.github.io/website/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://progen-labs.github.io/website/brand/progen-seed-mark.svg">
+      <img alt="Progen Labs" src="https://progen-labs.github.io/website/brand/progen-seed-mark-light.svg" height="72">
+    </picture>
+  </a>
+  <br>
+  <sub>Spectra is a <a href="https://progen-labs.github.io/website/">Progen Labs</a> project: open source, nonprofit, always free.</sub>
+</p>

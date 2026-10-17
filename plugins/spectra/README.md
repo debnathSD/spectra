@@ -24,3 +24,14 @@ The plugin runs Spectra's MCP server (`npx @progen-labs/spectra mcp`) with these
 `verify_change`, `compare_profiles`, `run_golden_paths`, `list_reports` and `get_report`.
 
 Full guide: <https://progen-labs.github.io/website/#spectra/docs/claude-code>
+
+<p align="center">
+  <a href="https://progen-labs.github.io/website/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://progen-labs.github.io/website/brand/progen-seed-mark.svg">
+      <img alt="Progen Labs" src="https://progen-labs.github.io/website/brand/progen-seed-mark-light.svg" height="72">
+    </picture>
+  </a>
+  <br>
+  <sub>Spectra is a <a href="https://progen-labs.github.io/website/">Progen Labs</a> project: open source, nonprofit, always free.</sub>
+</p>

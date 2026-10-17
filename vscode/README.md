@@ -71,3 +71,9 @@ keep it out of git.
 
 - [Documentation](https://progen-labs.github.io/website/#spectra/docs/vscode)
 - [Spectra on npm](https://www.npmjs.com/package/@progen-labs/spectra) and [GitHub](https://github.com/progen-labs/spectra)
+
+<p align="center">
+  <a href="https://progen-labs.github.io/website/"><img alt="Progen Labs" src="https://progen-labs.github.io/website/brand/progen-seed-mark.png" height="72"></a>
+  <br>
+  <sub>Spectra is a <a href="https://progen-labs.github.io/website/">Progen Labs</a> project: open source, nonprofit, always free.</sub>
+</p>
