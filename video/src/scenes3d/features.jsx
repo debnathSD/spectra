@@ -466,6 +466,114 @@ export const Safe = ({ loop, fps = 30 }) => {
   );
 };
 
+// 13 — The AI fix harness: an agent's changes ride through your checks and
+// Spectra's measurement; only a proven fix reaches "kept" (the test bench's cases)
+const GATES = [
+  { x: -2.6, label: 'Agent', color: PAL.violet },
+  { x: -0.2, label: 'Your checks', color: PAL.cyan },
+  { x: 2.2, label: 'Measure', color: PAL.blue },
+];
+const SPEED = 2.9;
+const CHANGES = [
+  { text: 'return null', at: 0.25, fails: 1, note: '✗ npm test failed' },
+  { text: '// keep in sync', at: 0.95, fails: 2, note: '✗ within noise' },
+  { text: 'useMemo(() => burn(…))', at: 1.75, fails: 0, note: '✓ −90%' },
+];
+const reach = (c, gate) => c.at + (GATES[gate].x - GATES[0].x) / SPEED;
+const KEPT_X = 3.6;
+export const FixHarness = ({ loop, fps = 30 }) => {
+  const { s, f, sp } = useClock();
+  const sim = simulate(
+    'fix-harness',
+    (world, C) => {
+      ground(world, C);
+      const belt = new C.Body({ type: C.Body.STATIC, shape: new C.Box(new C.Vec3(3.9, 0.15, 0.5)), position: new C.Vec3(0.3, 0.25, 0) });
+      world.addBody(belt);
+      return CHANGES.map(c => {
+        const t = reach(c, c.fails || 1);
+        const b = new C.Body({ type: C.Body.STATIC, shape: new C.Box(new C.Vec3(1.05, 0.17, 0.32)), position: new C.Vec3(GATES[c.fails || 1].x + 0.35, 0.6, 0) });
+        b.dropAt = Math.round(t * fps);
+        b.dropMass = 1;
+        b.onFrame = (frame, body) => {
+          // knocked off the back of the belt, carrying the belt's speed
+          if (frame === body.dropAt) {
+            body.velocity.set(1.0, 0.35, -2.2);
+            body.angularVelocity.set(-2.2, 0.3, 0.4);
+          }
+        };
+        world.addBody(b);
+        return b;
+      });
+    },
+    Math.round(12 * fps),
+    { fps },
+  );
+  const bodies = sim(f);
+  const flash = (gate, ok, at) => (s >= at && s < at + 0.6 ? (ok ? '#22c98a' : '#ff4d6d') : null);
+  return (
+    <Shell loop={loop} cam={[0, 3.6, 10.2]} target={[0.4, 1.0, 0]} sway={0.1}>
+      {/* the belt */}
+      <mesh position={[0.3, 0.25, 0]} geometry={rounded(7.8, 0.3, 1, 0.08)} material={glossy('#1a2346')} receiveShadow castShadow />
+      <mesh position={[0.3, 0.41, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[7.6, 0.06]} />
+        <meshStandardMaterial color={PAL.cyan} emissive={PAL.cyan} emissiveIntensity={1.4} toneMapped={false} />
+      </mesh>
+      {GATES.map((g, i) => {
+        const hit = CHANGES.map(c => {
+          if (i === 0) return null;
+          const t = reach(c, i);
+          if (c.fails && c.fails < i) return null;
+          return flash(i, c.fails !== i, t);
+        }).find(Boolean);
+        const color = hit || g.color;
+        return (
+          <group key={g.label} position={[g.x, 0, 0]}>
+            {[-0.75, 0.75].map(z => (
+              <mesh key={z} position={[0, 0.95, z]} geometry={rounded(0.18, 1.5, 0.18, 0.06)} material={glossy(color, hit || '#000000', hit ? 1.2 : 0)} castShadow />
+            ))}
+            <mesh position={[0, 1.75, 0]} geometry={rounded(0.22, 0.22, 1.72, 0.08)} material={glossy(color, color, hit ? 1.4 : 0.35)} castShadow />
+            <Chip text={g.label} position={[0, 2.25, 0]} w={1.9} h={0.46} d={0.16} size={0.2} color={PAL.slate} />
+          </group>
+        );
+      })}
+      {/* where a proven fix ends up */}
+      <group position={[KEPT_X + 0.2, 0, 1.6]}>
+        <mesh position={[0, 0.06, 0]} geometry={rounded(2.3, 0.12, 1.1, 0.05)} material={glossy('#145a42', '#22c98a', 0.4)} receiveShadow />
+        <Label position={[0, 0.13, 0.56]} width={2.2} height={0.36} lines={[ui('✓ kept as a commit', '#8ff0c4', 0.17)]} />
+      </group>
+      {CHANGES.map((c, k) => {
+        if (s < c.at) return null;
+        const pop = sp(c.at, { damping: 12, stiffness: 160 });
+        const end = c.fails ? reach(c, c.fails) : null;
+        const color = c.fails ? (s >= end ? '#7a1e33' : PAL.violet) : s >= reach(c, 2) + 0.2 ? '#16a874' : PAL.violet;
+        let pos;
+        let quat;
+        if (c.fails && s >= end) {
+          pos = bodies[k].p;
+          quat = bodies[k].q;
+        } else {
+          const x = GATES[0].x + (s - c.at) * SPEED + 0.35;
+          const keptAt = (KEPT_X - GATES[0].x) / SPEED;
+          const done = !c.fails && s - c.at > keptAt;
+          // the proven fix slides off the end of the belt onto the "kept" pad
+          const slide = Math.min(1, (s - c.at - keptAt) / 0.4);
+          pos = done ? [KEPT_X + 0.2 * slide, 0.6 - 0.35 * slide, 1.6 * slide] : [Math.min(x, KEPT_X), 0.6, 0];
+        }
+        const gateNote = c.fails ? end : reach(c, 2);
+        return (
+          <group key={c.text}>
+            <Chip text={c.text} position={pos} quaternion={quat} scale={pop} w={2.1} h={0.34} d={0.64} size={0.17} font="mono" color={color} textColor="#ffffff" />
+            {s >= gateNote && s < gateNote + 0.8 && (
+              <Chip text={c.note} position={[GATES[c.fails || 2].x, 3.0, 0.3]} scale={sp(gateNote)} w={2.1} h={0.42} d={0.14} size={0.19} color={c.fails ? '#3a1220' : '#14684a'} textColor={c.fails ? '#ff9fb2' : '#ffffff'} />
+            )}
+          </group>
+        );
+      })}
+      {s > reach(CHANGES[2], 2) + 1.05 && <Chip text="7cae6fa · perf: Row" position={[KEPT_X + 0.2, 1.05, 1.6]} scale={sp(reach(CHANGES[2], 2) + 1.05)} w={2.3} h={0.38} d={0.14} size={0.16} font="mono" color={PAL.slate} textColor="#8ff0c4" />}
+    </Shell>
+  );
+};
+
 export const FEATURE_SCENES = {
   'one-command': OneCommand,
   journeys: Journeys,
@@ -479,4 +587,5 @@ export const FEATURE_SCENES = {
   dashboard: Dashboard,
   json: JsonOut,
   safe: Safe,
+  fix: FixHarness,
 };

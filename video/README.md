@@ -3,12 +3,13 @@
 Made with [Remotion](https://www.remotion.dev); this folder is not part of the
 npm package.
 
-- `launch`: the two-minute launch film (1920 × 1080, 60 fps), from the MCP
-  server and Claude Code to VS Code, the npm package, its CLI, frameworks and
-  open source. It is cut to the music, 64 bars at 128 BPM
-  (`src/launch/timeline.js`).
-- `vscode`, `claude-code`, `mcp-server`: the short videos on the docs pages.
-- `feature-*`: twelve silent 6-second loops (960 × 540, 30 fps) for the
+- `launch`: the launch film (1920 × 1080, 60 fps, about 2 minutes), from the
+  MCP server and Claude Code to VS Code, the npm package, its CLI, the AI fix
+  harness, frameworks and open source. It is cut to the music, 68 bars at
+  128 BPM (`src/launch/timeline.js`).
+- `vscode`, `claude-code`, `mcp-server`, `fix-harness`: the short videos on the
+  docs pages. `fix-harness` shows a real test-bench session of `spectra fix`.
+- `feature-*`: thirteen silent 6-second loops (960 × 540, 30 fps) for the
   feature cards on the Spectra page. They loop seamlessly.
 
 The 3D is real WebGL ([three.js](https://threejs.org) through

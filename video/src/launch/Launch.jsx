@@ -4,11 +4,12 @@ import { Background, Grain } from '../components/Background.jsx';
 import { Music, Sfx } from '../components/Sound.jsx';
 import { CHAPTERS, CLI_FEATURES, CLI_FEATURE_BEATS, DURATION, MUSIC, bar } from './timeline.js';
 import { beats } from '../theme.js';
-import { ClaudeScene, CliScene, EndScene, FrameworksScene, McpScene, NpmScene, OpenScene, OpenSourceScene, ProblemScene, VsCodeScene } from './scenes.jsx';
+import { ClaudeScene, CliScene, EndScene, FrameworksScene, HarnessScene, McpScene, NpmScene, OpenScene, OpenSourceScene, ProblemScene, VsCodeScene } from './scenes.jsx';
 
-// Spectra's two-minute launch film: the cold open, the problem, then MCP,
-// Claude Code, VS Code, the npm package and its CLI, frameworks, open source.
-const SCENES = { open: OpenScene, problem: ProblemScene, mcp: McpScene, claude: ClaudeScene, vscode: VsCodeScene, npm: NpmScene, cli: CliScene, frameworks: FrameworksScene, 'open-source': OpenSourceScene, end: EndScene };
+// Spectra's launch film: the cold open, the problem, then MCP, Claude Code,
+// VS Code, the npm package and its CLI, the AI fix harness, frameworks and
+// open source.
+const SCENES = { open: OpenScene, problem: ProblemScene, mcp: McpScene, claude: ClaudeScene, vscode: VsCodeScene, npm: NpmScene, cli: CliScene, harness: HarnessScene, frameworks: FrameworksScene, 'open-source': OpenSourceScene, end: EndScene };
 
 export const Launch = () => (
   <AbsoluteFill>
@@ -33,14 +34,15 @@ export const Launch = () => (
     ))}
     <Sfx name="impact" at={bar(0)} volume={0.5} />
     <Sfx name="impact" at={bar(6)} volume={0.35} />
-    {['mcp', 'claude', 'vscode', 'cli'].map(id => (
+    {['mcp', 'claude', 'vscode', 'cli', 'harness'].map(id => (
       <Sfx key={id} name="impact" at={bar(CHAPTERS.find(c => c.id === id).from)} volume={0.3} />
     ))}
     {CLI_FEATURES.map((x, i) => (
       <Sfx key={x.scene} name="tick" at={bar(37) + i * beats(CLI_FEATURE_BEATS) + 8} volume={0.22} />
     ))}
     <Sfx name="chime" at={bar(16) + beats(4) * 5.6 + 6} volume={0.4} />
-    <Sfx name="impact" at={bar(60)} volume={0.55} />
+    <Sfx name="chime" at={bar(53) + 248} volume={0.35} />
+    <Sfx name="impact" at={bar(64)} volume={0.55} />
   </AbsoluteFill>
 );
 export { DURATION, MUSIC };

@@ -20,7 +20,7 @@ const OUT = path.join(VIDEO, 'out');
 const args = process.argv.slice(2);
 const audioOnly = args.includes('--audio');
 const named = args.filter(a => !a.startsWith('--'));
-const FEATURES = ['one-command', 'journeys', 'culprit', 'components', 'proof', 'budgets', 'pull-requests', 'ai', 'editor', 'dashboard', 'json', 'safe'].map(f => `feature-${f}`);
+const FEATURES = ['one-command', 'journeys', 'culprit', 'components', 'proof', 'budgets', 'pull-requests', 'ai', 'editor', 'dashboard', 'json', 'safe', 'fix'].map(f => `feature-${f}`);
 const ids = (named.length ? named : ['vscode', 'claude-code', 'mcp-server']).flatMap(id => (id === 'features' ? FEATURES : [id]));
 const GL = { gl: 'angle' }; // WebGL on the GPU
 const silent = id => id.startsWith('feature-');

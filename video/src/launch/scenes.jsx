@@ -508,6 +508,36 @@ export const CliScene = ({ len }) => {
   );
 };
 
+// ---------------------------------------------------------------- 05 the AI fix harness
+export const HarnessScene = ({ len }) => {
+  const { f, fps } = useT();
+  const o = BAR;
+  return (
+    <AbsoluteFill>
+      <Sequence durationInFrames={BAR + 10} layout="none">
+        <ChapterCard n="05" title="AI fix harness" line="Hands-off fixes, proven." until={BAR - 10} />
+      </Sequence>
+      <Sequence from={o - 8} layout="none">
+        <SceneTime.Provider value={{ scale: 1, total: (len - o + 8) / fps, shift: 290, dist: 1.5 }}>
+          <AbsoluteFill style={{ opacity: fade(f - o + 8, len - o + 8, 10, 8) }}>{React.createElement(FEATURE_SCENES.fix, { loop: false, fps })}</AbsoluteFill>
+        </SceneTime.Provider>
+      </Sequence>
+      <Sequence from={o} layout="none">
+        <ChapterTag n="05" title="AI fix harness" until={len - o - 8} />
+        <SideText
+          at={4}
+          until={len - o - 8}
+          top={240}
+          title="spectra fix"
+          body="An AI agent fixes the costliest findings in a copy of your code. A change is kept only if your checks pass and it measures faster."
+          you="Review a branch of proven fixes."
+          users="Real speed-ups, never a broken page."
+        />
+      </Sequence>
+    </AbsoluteFill>
+  );
+};
+
 // ---------------------------------------------------------------- frameworks
 const FrameworkWorld = () => {
   const { sp } = useT();
