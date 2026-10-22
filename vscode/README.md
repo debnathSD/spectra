@@ -28,7 +28,7 @@ files behind long tasks, forced reflows and slow loads. This extension puts thos
 
 ## Requirements
 
-- Node.js 18 or newer, and Chrome, Chromium or Edge (Spectra drives the browser you have).
+- Node.js 22.12 or newer, and Chrome, Chromium or Edge (Spectra drives the browser you have).
 - Your project's dev server, or a page running on this machine.
 - Spectra itself: the extension uses your project's `@progen-labs/spectra` (0.2.0 or later) when it is installed,
   and otherwise runs the latest version with `npx`. To install it:

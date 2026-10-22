@@ -48,7 +48,7 @@ installed package, use `npx spectra dashboard` wherever it says `npm run dev`. E
 
 | Need | Details |
 | --- | --- |
-| **Node 18 or newer** | ⚠️ Some frontends may pin an older Node version; this tool needs **Node 18+**. Use a separate terminal for it if needed. With nvm: `nvm install 18 && nvm use 18`. |
+| **Node 22.12 or newer** | ⚠️ Some frontends may pin an older Node version; this tool needs **Node 22.12+** (its Chrome driver, puppeteer-core, does). Use a separate terminal for it if needed. With nvm: `nvm install 22 && nvm use 22`. |
 | **Google Chrome** | Also works with Chromium or Microsoft Edge. Found automatically on macOS, Linux and Windows; otherwise set `CHROME_PATH` (see [Configuration](#configuration)). |
 | **The frontend running locally** | The frontend development server (your app's dev server), e.g. `http://localhost:3000` or any host/port your app uses. See step 2 below. |
 | A login for that app (optional) | If your app requires sign-in, Spectra signs in for you (or waits while you do) — see [Signing in](#signing-in). |
@@ -93,7 +93,7 @@ npm run dev               # e.g. http://localhost:3000
 
 Wait until your frontend dev server finishes compiling; open it in your normal browser once to confirm the app loads.
 
-**3. The profiler** (Node 18+, in this folder `performance-profiler/`):
+**3. The profiler** (Node 22.12+, in this folder `performance-profiler/`):
 
 ```bash
 npm run dev               # http://localhost:5178   (PORT=5190 npm run dev to change the port)
@@ -405,7 +405,7 @@ an icon (✓ ✕ =) and a word.
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `npm install` / `npm run dev` / `npx spectra` fails with syntax or engine errors | Your Node is older than 18. Switch this terminal to Node 18+ (`nvm use 18`). |
+| `npm install` / `npm run dev` / `npx spectra` fails with syntax or engine errors | Your Node is older than 22.12. Switch this terminal to Node 22.12 or newer (`nvm use 22`). |
 | **“Chrome was not found”** | Set `CHROME_PATH` to the executable, e.g. `CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run dev`. |
 | Chrome opens on an error at the app's login route | The login route may need a different URL or a special query parameter. Give the right **Login page** (or `--login-url`), close Chrome and launch again (see [Signing in](#signing-in)). |
 | Red banner “The page answered HTTP 4xx/5xx” | The page failed to load — usually not signed in, or the backend/dev server is down. Check <http://localhost:3000> in a normal browser. |
@@ -1097,7 +1097,7 @@ every Monday (for new security advisories):
 | **Lint** | `npm run lint` (ESLint, `eslint.config.js`): undefined names, unused code, React hooks; no warnings allowed |
 | **Tests** | `npm test` on Node 22, 24 and 26 (Linux) and Node 24 (macOS); the VS Code extension's tests on one of them |
 | **Build** | the dashboard (`npm run build`) |
-| **Package** | `publint --strict`, then the packed package installed in a new project and run (`--version`, `--help`, `agents --print`, `reports`) on Linux with Node 20, macOS and Windows |
+| **Package** | `publint --strict`, then the packed package installed in a new project and run (`--version`, `--help`, `agents --print`, `reports`) on Linux with Node 22 (the oldest supported), macOS and Windows |
 | **Size budget** | `scripts/size-report.mjs`: the npm package, the install with its dependencies, the number of packages and the dashboard bundle (`size-limit` in `package.json`), against budgets; on a pull request, compared with its base |
 | **npm audit** | the runtime dependencies; high or critical fail it |
 | **Dependency review** | pull requests only: new dependencies with known vulnerabilities (high or critical fail it) or disallowed licenses |

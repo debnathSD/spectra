@@ -45,7 +45,7 @@ required.
 npm install --save-dev @progen-labs/spectra
 ```
 
-Requirements: **Node 18+** and a local **Chrome / Chromium / Edge** (Spectra drives your installed
+Requirements: **Node 22.12+** and a local **Chrome / Chromium / Edge** (Spectra drives your installed
 browser; it does not download one). If it can't find Chrome, set `CHROME_PATH` to the executable.
 
 ## Quick start
@@ -377,7 +377,7 @@ Every pull request and every push to `main` runs the same checks, and **spectra-
 with all of their results in one place, updated on every push:
 
 - **tests**: the test suite on Node 22, 24 and 26 (Linux) and Node 24 (macOS), and the VS Code extension's tests.
-  The packed npm package is also installed and run on Linux (Node 20), macOS and Windows.
+  The packed npm package is also installed and run on Linux (Node 22, the oldest supported), macOS and Windows.
 - **lint**: ESLint, for undefined names, unused code and broken React hooks.
 - **npm audit**: the dependencies Spectra installs, plus GitHub's dependency review of new ones on pull requests;
   weekly too, so new advisories show up.
