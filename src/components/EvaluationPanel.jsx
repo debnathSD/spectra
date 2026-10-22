@@ -150,7 +150,7 @@ export default function EvaluationPanel({ evaluations, onOpenReport }) {
           </div>
           <p className="muted eval-foot">
             Automation: {passed}/{detail.paths.length} golden paths passed. Open any
-            row for its full report — culprits, React re-renders, long tasks, PDF
+            row for its full report — culprits, component re-renders, long tasks, PDF
             export and commit compare.
           </p>
         </>

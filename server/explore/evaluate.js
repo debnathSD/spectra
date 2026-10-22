@@ -65,7 +65,7 @@ function recordBaseline(session) {
  * @param {boolean} [opts.headless]    default true
  * @param {number} [opts.limit]        max golden paths (default 12)
  * @param {string[]} [opts.allow]      selectors of destructive actions to permit
- * @param {string} [opts.signIn]       sign-in URL template
+ * @param {string|object} [opts.signIn] how to sign in (signin.js normalizeSignIn)
  * @param {(ev:object)=>void} [opts.onProgress]
  */
 export async function runEvaluation({
@@ -78,9 +78,11 @@ export async function runEvaluation({
 } = {}) {
   const log = onProgress || (() => {});
   const session = new PerfSession();
+  session.on('state', s => s.state === 'signing-in' && log({ phase: 'sign-in', method: s.method }));
   const results = [];
   try {
     await session.connect({ mode: 'launch', url, headless, signIn });
+    if (session.signedIn) log({ phase: 'signed-in' });
     // Auto-dismiss alert/confirm/beforeunload dialogs so a journey can't hang.
     if (session.page) {
       session.page.on('dialog', d => d.dismiss().catch(() => {}));

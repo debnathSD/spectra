@@ -101,7 +101,7 @@ function Welcome({ onCompare }) {
       <div>
         <h2>Find what makes the frontend slow</h2>
         <p className="welcome-lead">
-          Ranked culprits, heat trees, React re-renders, long tasks and network
+          Ranked culprits, heat trees, component re-renders, long tasks and network
           findings from a single recording.
         </p>
       </div>

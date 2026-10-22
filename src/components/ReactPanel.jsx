@@ -1,3 +1,4 @@
+import { frameworkName } from '../framework.js';
 import { useMemo, useState } from 'react';
 import { fmtMs, fmtNumber, splitPath } from '../format.js';
 
@@ -101,10 +102,7 @@ export default function ReactPanel({ report, hideVendor, onOpenFile }) {
       );
   }, [react.components, sort, hideVendor]);
 
-  const fwLabel =
-    { vue: 'Vue', svelte: 'Svelte', angular: 'Angular', next: 'React' }[
-      react.framework
-    ] || 'React';
+  const fwLabel = frameworkName(react.framework) || 'React';
   if (!react.detected) {
     return (
       <div className="empty">

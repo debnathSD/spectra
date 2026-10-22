@@ -89,6 +89,56 @@
           "description": "All findings"
         }
       }
+    },
+    "signIn": {
+      "type": "object",
+      "description": "How Spectra signs in to your app before profiling it. Only the non-secret parts: the password, the authenticator secret, header values, cookies and storage entries come from the environment (SPECTRA_LOGIN_PASSWORD, SPECTRA_LOGIN_TOTP_SECRET, SPECTRA_LOGIN_HEADER, SPECTRA_LOGIN_COOKIES, SPECTRA_LOGIN_STORAGE).",
+      "additionalProperties": false,
+      "properties": {
+        "method": {
+          "enum": [
+            "form",
+            "link",
+            "http",
+            "token",
+            "manual"
+          ],
+          "description": "form: a login form; link: a URL that signs in by itself; http: the browser's login prompt; token: a header, cookies or localStorage entries; manual: you sign in in the Chrome window"
+        },
+        "url": {
+          "type": "string",
+          "description": "The login page, or the sign-in link. {url} in it becomes the page to return to"
+        },
+        "username": {
+          "type": "string",
+          "description": "The username or email"
+        },
+        "startSelector": {
+          "type": "string",
+          "description": "CSS selector for a control to click first, such as a button that opens the login, when Spectra can't find it"
+        },
+        "usernameSelector": {
+          "type": "string",
+          "description": "CSS selector for the username field, when Spectra can't find it"
+        },
+        "passwordSelector": {
+          "type": "string",
+          "description": "CSS selector for the password field, when Spectra can't find it"
+        },
+        "submitSelector": {
+          "type": "string",
+          "description": "CSS selector for the submit button, when Spectra can't find it"
+        },
+        "codeSelector": {
+          "type": "string",
+          "description": "CSS selector for the one-time code field, when Spectra can't find it"
+        },
+        "waitSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "How long to wait for a manual sign-in (default 300)"
+        }
+      }
     }
   }
 }

@@ -13,6 +13,7 @@ import { readReport } from '../recorder.js';
 import { REPORTS_DIR, TARGET_NAME } from '../config.js';
 import { parseArgs } from '../args.js';
 import { loadProjectConfig } from '../project-config.js';
+import { signInFromOptions } from '../signin.js';
 import { EXIT, SPECTRA_VERSION, exitAfterFlush, printBudgets, reportFile, writeResult } from '../output.js';
 import { buildEvaluationResult } from '../../shared/result.js';
 
@@ -28,9 +29,10 @@ const out = opt('out');
 // In --json mode stdout carries only the result; people still see the matrix.
 const log = json ? console.error : console.log;
 
-let config;
+let config, signIn;
 try {
   config = loadProjectConfig(opt('config'));
+  signIn = signInFromOptions(opt, config.signIn);
 } catch (err) {
   console.error(`spectra: ${err.message}`);
   process.exit(EXIT.ERROR);
@@ -84,11 +86,19 @@ let result;
 try {
   result = await runEvaluation({
     url,
-    headless: !flag('headed'),
+    // signing in yourself needs the window, so it shows Chrome even without --headed
+    headless: !flag('headed') && signIn?.method !== 'manual',
     limit: Number(opt('paths', 12)),
-    signIn: opt('sign-in'),
+    signIn,
     onProgress: ev => {
-      if (ev.phase === 'baseline') console.error('spectra: recording baseline page load …');
+      if (ev.phase === 'sign-in')
+        console.error(
+          ev.method === 'manual'
+            ? 'spectra: sign in in the Chrome window (any way the app asks); Spectra carries on once you are in …'
+            : 'spectra: signing in through the login form …',
+        );
+      else if (ev.phase === 'signed-in') console.error('spectra: signed in');
+      else if (ev.phase === 'baseline') console.error('spectra: recording baseline page load …');
       else if (ev.phase === 'discover') console.error('spectra: discovering actionable elements …');
       else if (ev.phase === 'synthesized')
         console.error(

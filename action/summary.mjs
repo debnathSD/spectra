@@ -51,7 +51,7 @@ function budgetsBlock(budgets) {
 }
 
 function findingsBlock(all, limit) {
-  // notes (e.g. "no React renderer seen" on a non-React page) are noise in CI
+  // notes (e.g. "no component framework seen" on a plain page) are noise in CI
   const findings = (all || []).filter(f => f.severity !== 'info');
   if (!findings.length) return ['No warnings or critical findings.', ''];
   return [

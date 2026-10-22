@@ -550,6 +550,93 @@ label.switch {
   flex: 1;
   min-width: 16rem;
 }
+
+/* ---- sign-in ---- */
+.signin {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.signin.on {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+.signin > .switch {
+  align-items: flex-start;
+}
+.signin > .switch b {
+  color: var(--text);
+  font-weight: 600;
+}
+.signin-body {
+  display: grid;
+  gap: 0.55rem;
+}
+.signin-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.signin-method {
+  min-height: 1.8rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  color: var(--text-2);
+}
+.signin-method.selected,
+.signin-method.selected:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.signin-hint {
+  margin: 0;
+}
+.signin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.5rem 0.6rem;
+  align-items: end;
+}
+.signin-grid .wide {
+  grid-column: 1 / -1;
+}
+.signin-grid p {
+  margin: 0.2rem 0 0;
+}
+.signin-more {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+.signin-more > .signin-grid {
+  width: 100%;
+}
+button.small {
+  min-height: 1.6rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+}
+.secret-tag {
+  margin-left: 0.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  vertical-align: 1px;
+}
+.signin-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.signin-note b {
+  color: var(--warn, var(--text));
+}
 .pill {
   display: inline-flex;
   align-items: center;
@@ -1698,6 +1785,10 @@ svg.change-bar rect {
   gap: 1rem;
   padding: 1rem 1.2rem;
   align-items: start;
+}
+/* a page without components to pin: the screenshot takes the whole width */
+.page-map.no-pins {
+  grid-template-columns: minmax(0, 1fr);
 }
 .page-caption {
   margin: 0 0 0.6rem;

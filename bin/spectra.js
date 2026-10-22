@@ -21,6 +21,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bootDevServer } from '../server/explore/boot.js';
 import { detectFramework } from '../server/framework.js';
+import { SIGN_IN_HELP } from '../server/signin.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.resolve(here, '..');
@@ -65,7 +66,8 @@ performance options:
   --command "<cmd>"     Override the dev-server command (default: your npm dev script)
   --boot-timeout <s>    How long to wait for the dev server (default 60)
   --headed              Show the browser window
-  --sign-in <url>       Sign-in URL template, e.g. "http://host/login/?redirect={url}"
+
+${SIGN_IN_HELP}
 
 quick single-page profile (opt in with --quick, --mode or --scenario):
   --quick               One page-load profile (about 15 s): the fast loop
@@ -80,7 +82,7 @@ output and checks (any performance run):
   --json                Print a machine-readable result on stdout (progress and
                         tables go to stderr)
   --out <file>          Also write that result to a file (input for compare)
-  --config <file>       Budgets file (default: spectra.config.json in the project)
+  --config <file>       Budgets and sign-in file (default: spectra.config.json)
 
 compare options:
   <before> <after>      Each: a report id, a report file, a --out result file,
@@ -88,8 +90,9 @@ compare options:
   --json, --out <file>  As above
   --fail-on-regression  Exit with code 2 when a key metric got worse
 
-Budgets (spectra.config.json in your project root):
-  { "budgets": { "tbtMs": 200, "lcpMs": 2500, "cls": 0.1, "criticalFindings": 0 } }
+Budgets and sign-in (spectra.config.json in your project root):
+  { "budgets": { "tbtMs": 200, "lcpMs": 2500, "cls": 0.1, "criticalFindings": 0 },
+    "signIn": { "method": "form", "url": "http://localhost:3000/login", "username": "me@example.com" } }
 
 Exit codes: 0 done · 1 could not run · 2 over budget / regression
 
@@ -102,6 +105,7 @@ Examples:
   spectra compare before.json after.json           # did the change help?
   spectra fix --max-fixes 3                        # let an agent fix them, verified
   spectra performance --json | jq .summary         # pipe it anywhere
+  SPECTRA_LOGIN_PASSWORD=… spectra performance --login-url http://localhost:3000/login --login-user me@example.com
 `;
 
 // What a terminate signal must clean up: the running script and a dev server

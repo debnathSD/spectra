@@ -101,7 +101,7 @@ export default function FilePanel({ report, path, onClose }) {
             value={fmtMs(file.blockMs)}
             warn={file.blockMs > 0}
           />
-          <Metric label="React renders" value={fmtNumber(file.renders)} />
+          <Metric label="Component renders" value={fmtNumber(file.renders)} />
           <Metric
             label="Wasted"
             value={fmtNumber(file.wasted)}
@@ -184,7 +184,7 @@ export default function FilePanel({ report, path, onClose }) {
         {tab === 'components' &&
           ((file?.components.length || 0) === 0 ? (
             <p className="muted pad">
-              No React components from this file rendered.
+              No components from this file rendered.
             </p>
           ) : (
             <table className="data">

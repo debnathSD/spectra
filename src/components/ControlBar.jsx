@@ -1,11 +1,11 @@
+import { frameworkName } from '../framework.js';
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { ChevronIcon, PageLoadIcon, RecordIcon, StopIcon } from './Icons.jsx';
 import Popover from './Popover.jsx';
+import SignInPanel, { methodTitle, missing, toSignIn, useSignIn } from './SignIn.jsx';
 
 const URL_KEY = 'perf-profiler:url';
-const SIGNIN_KEY = 'perf-profiler:sign-in';
-const readSignIn = () => localStorage.getItem(SIGNIN_KEY) || '';
 
 function Elapsed({ startedAt }) {
   const [now, setNow] = useState(Date.now());
@@ -21,31 +21,26 @@ function Elapsed({ startedAt }) {
 
 function ProbePill({ probe }) {
   if (!probe) return null;
-  if (probe.react) {
+  // the probe names the framework it hooked: 'react', 'vue', 'angular', …
+  const name = frameworkName(probe.framework || (probe.react ? 'react' : ''));
+  if (probe.react || probe.detected) {
     return (
       <span
         className="pill ok"
-        title="React was detected; per-component render data will be recorded."
+        title={`${name || 'A component framework'} was detected; per-component render data will be recorded.`}
       >
-        ✓ React {probe.version}
-        {probe.timings ? '' : ' · no timings (production build)'}
+        ✓ {name || 'Components'} {probe.version}
+        {probe.react && !probe.timings ? ' · no timings (production build)' : ''}
       </span>
     );
   }
-  // If a non-React framework was detected, show that instead of the reload hint
-  if (probe.framework && probe.framework.name) {
-    return (
-      <span className="pill ok" title={`Detected ${probe.framework.name}`}>
-        ✓ {probe.framework.name} {probe.framework.version || ''}
-      </span>
-    );
-  }
+  // not a problem: any app is profiled down to its files and functions
   return (
     <span
-      className="pill warn"
-      title="The probe must load before React. Use Reload, or “Record page load”."
+      className="pill"
+      title="Files and functions are profiled for any app. If this one uses React, Vue or Angular, the probe must load before the framework does: use Reload, or “Record page load”."
     >
-      ! No React seen — reload
+      No component framework seen
     </span>
   );
 }
@@ -57,13 +52,15 @@ function Connect({ status, run, isCompact }) {
   const [headless, setHeadless] = useState(false);
   const [browserURL, setBrowserURL] = useState('http://127.0.0.1:9222');
   const [busy, setBusy] = useState(false);
-  const [signIn, setSignIn] = useState(readSignIn);
+  const [signIn, updateSignIn] = useSignIn();
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const gap = missing(signIn);
+  // signing in yourself needs the window
+  const manual = signIn.enabled && signIn.method === 'manual';
   const go = async options => {
     if (options.url) localStorage.setItem(URL_KEY, options.url);
-    localStorage.setItem(SIGNIN_KEY, signIn);
     setBusy(true);
-    await run(() => api.connect(options));
+    await run(() => api.connect({ ...options, signIn: toSignIn(signIn) }));
     setBusy(false);
   };
   return (
@@ -72,8 +69,8 @@ function Connect({ status, run, isCompact }) {
         <div className="connect-head">
           <h2>Connect to a browser</h2>
           <p className="muted">
-            Launch a fresh Chrome window, sign in, and open the page you want to
-            profile.
+            Spectra opens a fresh Chrome window on the page you want to profile,
+            signing in first when your app needs it.
           </p>
         </div>
       )}
@@ -90,10 +87,11 @@ function Connect({ status, run, isCompact }) {
         <button
           type="button"
           className="primary"
-          disabled={busy}
-          onClick={() => go({ mode: 'launch', url, headless, signIn })}
+          disabled={busy || Boolean(gap)}
+          title={gap || undefined}
+          onClick={() => go({ mode: 'launch', url, headless: headless && !manual })}
         >
-          {busy ? 'Starting Chrome…' : 'Launch Chrome'}
+          {busy ? (signIn.enabled ? 'Opening and signing in…' : 'Starting Chrome…') : 'Launch Chrome'}
         </button>
         <button
           type="button"
@@ -104,35 +102,23 @@ function Connect({ status, run, isCompact }) {
           Advanced <ChevronIcon isUp={isAdvancedOpen} />
         </button>
       </div>
+      <SignInPanel value={signIn} update={updateSignIn} />
       {isAdvancedOpen && (
         <div className="advanced">
           <div className="advanced-section">
-            <div className="advanced-row">
-              <label
-                className="field"
-                title="Used automatically when the page fails to load or lands on a login screen. {url} is replaced with the page above. Do not put tokens in it."
-              >
-                Sign-in URL <span className="muted">(optional)</span>
-                <input
-                  value={signIn}
-                  onChange={e => setSignIn(e.target.value)}
-                  placeholder="http://localhost:3000/login/?redirect={url}"
-                />
-              </label>
-              <label className="switch">
-                <input
-                  type="checkbox"
-                  role="switch"
-                  checked={headless}
-                  onChange={e => setHeadless(e.target.checked)}
-                />
-                Headless
-              </label>
-            </div>
-            <span className="muted">
-              The Chrome window starts signed out every time, so give it your
-              app’s login URL once; {'{url}'} is where the page to profile goes.
-            </span>
+            <label
+              className="switch"
+              title={manual ? 'Signing in yourself needs the Chrome window.' : undefined}
+            >
+              <input
+                type="checkbox"
+                role="switch"
+                checked={headless && !manual}
+                disabled={manual}
+                onChange={e => setHeadless(e.target.checked)}
+              />
+              Headless <span className="muted">(no Chrome window)</span>
+            </label>
           </div>
           <div className="advanced-section">
             <div className="advanced-row">
@@ -145,17 +131,39 @@ function Connect({ status, run, isCompact }) {
               </label>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || Boolean(gap)}
                 onClick={() => go({ mode: 'attach', browserURL })}
               >
                 Attach
               </button>
             </div>
             <span className="muted">
-              Start it with <code>--remote-debugging-port=9222</code>
+              Start it with <code>--remote-debugging-port=9222</code>. A Chrome
+              you already use is usually signed in already.
             </span>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function SignInProgress({ method, signingIn }) {
+  return (
+    <div className="rec-strip">
+      <span className="rec">
+        <i className="spin" />{' '}
+        {!signingIn
+          ? 'Opening the page…'
+          : method === 'manual'
+            ? 'Waiting for you to sign in'
+            : `Signing in (${methodTitle(method).toLowerCase()})…`}
+      </span>
+      {signingIn && method === 'manual' && (
+        <span className="muted">
+          Sign in in the Chrome window, any way your app asks: codes, passkeys,
+          CAPTCHAs. Spectra carries on by itself once you are in.
+        </span>
       )}
     </div>
   );
@@ -274,15 +282,18 @@ export default function ControlBar({ status, run, isCompact }) {
       ? status.navigation
       : null;
   const idle = status.state === 'idle';
+  const signingIn = status.state === 'signing-in';
+  const opening = status.state === 'connecting';
   return (
     <section className="session" aria-label="Browser session">
       {failed && (
         <div className="error" role="alert">
           <span>
             The page answered <b>HTTP {failed.status}</b> ({failed.url}). You
-            are probably not signed in. Press Go to retry (the saved Sign-in URL
-            is applied automatically), or sign in by hand in the Chrome window.
-            If no Sign-in URL was saved, close Chrome and launch again with one.
+            are probably not signed in.{' '}
+            {status.signIn
+              ? 'Press Go to sign in again, or sign in by hand in the Chrome window.'
+              : 'Sign in by hand in the Chrome window, or close Chrome and launch again with “My app needs a sign-in” turned on.'}
           </span>
         </div>
       )}
@@ -306,20 +317,28 @@ export default function ControlBar({ status, run, isCompact }) {
           disabled={!idle}
           onChange={e => setAddress(e.target.value)}
           onKeyDown={e =>
-            e.key === 'Enter' && run(() => api.navigate(address, readSignIn()))
+            e.key === 'Enter' && run(() => api.navigate(address))
           }
         />
         <button
           type="button"
           disabled={!idle}
-          onClick={() => run(() => api.navigate(address, readSignIn()))}
+          onClick={() => run(() => api.navigate(address))}
         >
           Go
         </button>
         <button type="button" disabled={!idle} onClick={() => run(api.reload)}>
           Reload
         </button>
-            <ProbePill probe={status.probe} />
+        {status.signIn?.signedIn && (
+          <span
+            className="pill ok"
+            title={`Signed in with: ${methodTitle(status.signIn.method)}. Spectra signs in again if the session ends.`}
+          >
+            ✓ Signed in
+          </span>
+        )}
+        <ProbePill probe={status.probe} />
         <button
           type="button"
           className="ghost destructive"
@@ -329,7 +348,11 @@ export default function ControlBar({ status, run, isCompact }) {
         </button>
       </div>
       <div className="session-row">
-        <RecordRow status={status} run={run} />
+        {signingIn || opening ? (
+          <SignInProgress method={status.signIn?.method} signingIn={signingIn} />
+        ) : (
+          <RecordRow status={status} run={run} />
+        )}
       </div>
     </section>
   );

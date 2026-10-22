@@ -11,8 +11,10 @@ exact function, file and line, the evidence, and a suggested fix.
 Deep component-level attribution for **React, Next.js, Vue and Angular** (component names, render counts
 and per-component render/change-detection time; source files too, where the framework exposes them). For
 **Svelte and any other build**, a source-mapped generic profile still pinpoints the slow files and
-functions. A [Progen Labs](https://github.com/progen-labs) project — independent, open source, no
-telemetry, no account required.
+functions. The framework is detected in the page itself, so it is right wherever you start Spectra from.
+Apps behind a login work too: Spectra [signs in first](#behind-a-login), with every kind of login. A
+[Progen Labs](https://github.com/progen-labs) project — independent, open source, no telemetry, no account
+required.
 
 **Watch the demo (2½ minutes):** [progen-labs.github.io/website/#spectra/demo](https://progen-labs.github.io/website/#spectra/demo).
 
@@ -53,7 +55,7 @@ With no `--url`, Spectra:
 Automation: 8/8 golden paths passed.
 ```
 
-Then open the visual dashboard — ranked culprits, React re-renders, long tasks, the golden-path matrix,
+Then open the visual dashboard — ranked culprits, component re-renders, long tasks, the golden-path matrix,
 **PDF export** and **commit-to-commit compare**:
 
 ```bash
@@ -87,13 +89,47 @@ spectra --version
 | `--command "<cmd>"` | Override the dev-server command |
 | `--boot-timeout <s>` | How long to wait for the dev server (default 60) |
 | `--headed` | Show the browser window |
-| `--sign-in <url>` | Sign-in URL template, e.g. `http://host/login/?redirect={url}` |
+| `--login-url <url>`, `--login-user <name>` | Sign in first: the login page and the username; the password comes from `SPECTRA_LOGIN_PASSWORD` (see [Behind a login](#behind-a-login)) |
+| `--login <method>` | `form`, `link`, `http`, `token` or `manual` (you sign in in the Chrome window); guessed when left out |
 | `--quick` | One page-load profile instead of the golden-path suite: the fast loop |
 | `--runs <n>` | Record n times and report the median (with `--quick` or `--mode`) |
 | `--mode live\|load` | Classic single-page profile instead of the golden-path suite |
 | `--json` | Print a machine-readable result on stdout (tables go to stderr) |
 | `--out <file>` | Also write that result to a file (an input for `compare`) |
-| `--config <file>` | Budgets file (default: `spectra.config.json` in your project) |
+| `--config <file>` | Budgets and sign-in file (default: `spectra.config.json` in your project) |
+
+## Behind a login
+
+Most production frontends sit behind a login, and the Chrome Spectra launches starts signed out. Tell
+Spectra how your app signs in and it signs in before it records, so the login never shows up in a
+measurement:
+
+| Method | For |
+| --- | --- |
+| **Login form** (`form`) | A username and password on your app's login page or its identity provider (OAuth, OpenID Connect, SAML): one or two steps, forms that render late, in iframes or web components, behind a "Sign in" button, with **authenticator codes** from a TOTP secret |
+| **I'll sign in myself** (`manual`) | SMS or email codes, push approvals, passkeys, CAPTCHAs: Chrome opens on the login page and Spectra waits for you |
+| **Browser prompt** (`http`) | HTTP Basic or Digest, common on staging servers |
+| **Token or cookie** (`token`) | A header (sent only to your app's origin), cookies or localStorage entries |
+| **Sign-in link** (`link`) | A URL that signs in by itself, such as a dev-only auto-login |
+
+In the dashboard, turn on **My app needs a sign-in** under **Page to profile**. On the command line:
+
+```bash
+SPECTRA_LOGIN_PASSWORD="$TEST_PASSWORD" npx spectra performance --login-url http://localhost:3000/login --login-user demo@example.com
+npx spectra performance --login manual --login-url https://staging.example.com/login
+```
+
+Or once, for every command, the VS Code extension, the MCP server and `spectra fix`, in `spectra.config.json`:
+
+```json
+{ "signIn": { "method": "form", "url": "http://localhost:3000/login", "username": "demo@example.com" } }
+```
+
+Secrets come only from the dashboard or the environment (`SPECTRA_LOGIN_PASSWORD`, `SPECTRA_LOGIN_TOTP_SECRET`,
+`SPECTRA_LOGIN_HEADER`, `SPECTRA_LOGIN_COOKIES`, `SPECTRA_LOGIN_STORAGE`). They stay in memory: never written
+to disk, a report, a log or an error message, and `spectra.config.json` refuses them. Spectra never solves
+CAPTCHAs. Use a test account where you can. See
+[Signing in](https://progen-labs.github.io/website/#spectra/docs/signing-in), with a short video.
 
 ## Measure, change, verify
 
@@ -268,7 +304,8 @@ See the [VS Code guide](https://progen-labs.github.io/website/#spectra/docs/vsco
 Auto-exploration never triggers destructive actions. Spectra detects controls that would mutate state —
 anything labelled delete / pay / checkout / log out, logout links, and `POST`/`PUT`/`DELETE` form submits —
 and **skips** them unless you explicitly allow them. Form fields are filled with synthetic values; GET
-searches and navigations are fair game.
+searches and navigations are fair game. If a session expires and the app sends Spectra back to its login page,
+Spectra signs in again.
 
 ## Where results go
 

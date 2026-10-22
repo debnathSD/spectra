@@ -399,7 +399,7 @@ function Findings({ findings }) {
 }
 
 const DETAIL_TABS = [
-  ['components', 'React components'],
+  ['components', 'Components'],
   ['files', 'Files'],
   ['functions', 'Functions'],
   ['findings', 'Problems'],

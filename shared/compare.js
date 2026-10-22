@@ -301,7 +301,7 @@ export const METRICS = [
   },
   {
     id: 'renders',
-    group: 'React',
+    group: 'Components',
     label: 'Component renders',
     unit: 'count',
     get: r => reactSum(r, 'renders'),
@@ -310,7 +310,7 @@ export const METRICS = [
   },
   {
     id: 'wasted',
-    group: 'React',
+    group: 'Components',
     label: 'Wasted renders',
     unit: 'count',
     get: r => reactSum(r, 'wasted'),
@@ -320,8 +320,8 @@ export const METRICS = [
   },
   {
     id: 'renderMs',
-    group: 'React',
-    label: 'React render time',
+    group: 'Components',
+    label: 'Component render time',
     unit: 'ms',
     get: r => reactOnly(r, x => x.commits.totalMs),
     minAbs: 25,
@@ -329,8 +329,8 @@ export const METRICS = [
   },
   {
     id: 'maxCommit',
-    group: 'React',
-    label: 'Slowest React commit',
+    group: 'Components',
+    label: 'Slowest component update',
     unit: 'ms',
     get: r => reactOnly(r, x => x.commits.maxMs),
     minAbs: 10,
@@ -509,7 +509,7 @@ const SUBS = {
     },
     {
       id: 'reactMs',
-      label: 'React render time',
+      label: 'Component render time',
       unit: 'ms',
       minAbs: 5,
       minRel: 0.2,
@@ -785,8 +785,8 @@ function comparability(before, after) {
     add(
       'warn',
       'react',
-      'React timings missing in some runs',
-      `${noReact.length} run(s) had no React data (production build, or the probe loaded after React). React metrics are skipped or partial.`,
+      'Component timings missing in some runs',
+      `${noReact.length} run(s) had no component data (a production build, or the probe loaded after the framework). Component metrics are skipped or partial.`,
     );
 
   const attributions = unique(all.map(r => r.meta.attribution));

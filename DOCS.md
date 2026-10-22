@@ -1,11 +1,12 @@
 # Spectra
 
-Find out **which file, which function and which React component** makes a frontend app slow.
+Find out **which file, which function and which component** makes a frontend app slow.
 
 You point it at the app running in your browser, press **Record**, use the page, press **Stop** — and it gives you a
 ranked list of culprits, each with the exact function, file and line, the evidence, and a suggested fix. It drives a
-real Chrome through the Chrome DevTools Protocol (tracing + CPU sampling) and adds a small in-page probe for React
-re-renders and browser vitals.
+real Chrome through the Chrome DevTools Protocol (tracing + CPU sampling) and adds a small in-page probe for component
+re-renders (React, Next.js, Vue and Angular) and browser vitals. Any other frontend still gets its slow files and
+functions. Apps behind a login work too: Spectra [signs in first](#signing-in).
 
 > **The full guide**, with annotated screenshots of every screen, is on the Progen Labs website:
 > <https://progen-labs.github.io/website/#spectra/docs/introduction>. This file is the in-repo manual, the technical
@@ -49,7 +50,7 @@ installed package, use `npx spectra dashboard` wherever it says `npm run dev`. E
 | **Node 18 or newer** | ⚠️ Some frontends may pin an older Node version; this tool needs **Node 18+**. Use a separate terminal for it if needed. With nvm: `nvm install 18 && nvm use 18`. |
 | **Google Chrome** | Also works with Chromium or Microsoft Edge. Found automatically on macOS, Linux and Windows; otherwise set `CHROME_PATH` (see [Configuration](#configuration)). |
 | **The frontend running locally** | The frontend development server (your app's dev server), e.g. `http://localhost:3000` or any host/port your app uses. See step 2 below. |
-| A login for that app (optional) | If your app requires sign-in, you will sign in once per launch — see [Signing in](#signing-in). |
+| A login for that app (optional) | If your app requires sign-in, Spectra signs in for you (or waits while you do) — see [Signing in](#signing-in). |
 
 > **Profile a development build.** Production builds are minified and carry no per-file information, and React only
 > reports render timings in development mode. Dev builds are slower than production, so trust the *ranking* of what is
@@ -104,13 +105,16 @@ Open <http://localhost:5178> in any browser. That page is the *control panel*; t
 
 1. **Fill in the connect card** at the top of the profiler page:
   - **Page to profile** — the page you want to measure, e.g. `/path/to/page/` or `http://localhost:3000/path/to/page`.
-  - **Sign-in URL** *(optional)* — open **Advanced** only if the page requires a login; enter your app's login URL with `{url}` where the page goes. For example:
-   `http://localhost:3000/login/?redirect={url}`. Details in [Signing in](#signing-in).
-     remembered next time. **Advanced** also holds **Headless** and **Attach to a running Chrome**.
+  - **My app needs a sign-in** *(only if the page requires a login)* — turn it on and pick how your app signs in: a
+    login form (username and password, optional authenticator codes), signing in yourself, the browser's login
+    prompt, a token or cookie, or a sign-in link. Details in [Signing in](#signing-in).
+  - **Advanced** holds **Headless** and **Attach to a running Chrome**.
 2. Click **Launch Chrome**. A new Chrome window opens, signs in and loads your page. Wait until the page has fully
-   rendered. The session card now has two rows: the page (browser tab, URL, **Go**, **Reload**, a green
-   **✓ React 17.x** pill, **Close Chrome**) and the recording controls.
-   - Amber “**! No React seen — reload**”? Press **Reload** once (the probe has to be installed before React loads).
+   rendered. The session card now has two rows: the page (browser tab, URL, **Go**, **Reload**, **✓ Signed in** when
+   Spectra signed in, a green framework pill such as **✓ React 18.x**, **✓ Vue** or **✓ Angular**, **Close Chrome**)
+   and the recording controls.
+   - “**No component framework seen**” on a React, Vue or Angular app? Press **Reload** once (the probe has to be
+     installed before the framework loads). On any other app it is expected: files and functions are still profiled.
 3. Choose what to measure:
    - **● Record interaction** — press it, then *use the page in the Chrome window*: open a dashboard, scroll, type in the
      editor, switch tabs, open menus. Press **■ Stop & analyse** after **10–30 seconds**.
@@ -126,24 +130,53 @@ compare before and after a fix. **Delete** removes the selected one.
 
 ## Signing in
 
-The Chrome window starts **signed out every time**. Apps normally use *session* cookies, and Chrome throws those away
-when it closes — even though the tool keeps its own Chrome profile (in your temp directory, under `spectra-chrome/`).
-Choose one of:
+The Chrome window starts **signed out**: apps normally use *session* cookies, and Chrome throws those away when it
+closes, even though the tool keeps its own Chrome profile (in your temp directory, under `spectra-chrome/`). Tell
+Spectra how your app signs in, and it signs in before it records anything:
 
-- **Sign-in URL (optional, when required).** Enter it once next to *Page to profile* only if the page requires signing in.
-  The tool opens your page directly; if it lands on a login screen the Sign-in URL is used to sign in and continue to the page. If you are already signed in it is not used. It also applies when you press **Go** in the toolbar.
+| Method | For | What Spectra does |
+| --- | --- | --- |
+| **Login form** (`form`) | A username and password on your app's login page or its identity provider (OAuth, OpenID Connect, SAML) | Finds the fields (in the page, in iframes and inside web components), clicks a plain **Sign in** button first if the form is behind one, types like a person so framework-controlled inputs see it, handles two-step logins (username, **Next**, password), and answers an authenticator-code step when given the TOTP secret |
+| **I'll sign in myself** (`manual`) | SMS or email codes, push approvals, passkeys, CAPTCHAs | Opens the login page in a visible window and waits (5 minutes by default) until the login is gone |
+| **Browser prompt** (`http`) | HTTP Basic or Digest | Answers the prompt |
+| **Token or cookie** (`token`) | A header, cookies or localStorage entries the app accepts | Sets them before the app loads; a header goes only to the page's own origin |
+| **Sign-in link** (`link`) | A URL that signs in by itself | Opens it when the page lands on a login screen; `{url}` in it becomes the page to return to |
 
-  ```
-  http://localhost:3000/login/?redirect={url}
-  ```
+**In the dashboard**: turn on **My app needs a sign-in** under *Page to profile*. The page URL, the method, the login
+page, the username and any selectors are remembered in your browser; passwords, codes, tokens and cookies stay in that
+tab's memory only. **Go** signs in again with the same details when the page asks.
 
-  `{url}` is replaced with the (URL-encoded) path and query of the page to profile. On the CLI: `--sign-in "…{url}"`.
+**On the command line** (and so in CI, the VS Code extension, the MCP server and `spectra fix`, which all run it):
 
-- **Sign in by hand** in the Chrome window after it opens, then continue.
+```bash
+SPECTRA_LOGIN_PASSWORD="$TEST_PASSWORD" npx spectra performance --login-url http://localhost:3000/login --login-user demo@example.com
+npx spectra performance --login manual --login-url https://staging.example.com/login
+```
 
-Why `?browser=island` here: some local login routes pick tokens from specific query parameters. Adjust the Sign-in URL for
-your app if it requires a special parameter. Do not include tokens in the URL. The token stays in the backend; **the
-profiler never asks for, stores or logs a token or password**, and the Sign-in URL must not contain one.
+| Option | Description |
+| --- | --- |
+| `--login <method>` | `form`, `link`, `http`, `token` or `manual`; guessed when left out |
+| `--login-url <url>` | The login page, or the sign-in link (`{url}` becomes the page to return to) |
+| `--login-user <name>` | The username or email (or `SPECTRA_LOGIN_USER`) |
+| `--login-wait <s>` | How long to wait for a manual sign-in (default 300) |
+| `--login-start`, `--login-user-field`, `--login-password-field`, `--login-submit`, `--login-code-field <css>` | Point at the controls when Spectra can't find them |
+| `--sign-in <url>` | The 0.4 sign-in URL template; the same as `--login link --login-url <url>` |
+
+Secrets only come from the environment: `SPECTRA_LOGIN_PASSWORD`, `SPECTRA_LOGIN_TOTP_SECRET` (the base32 secret behind
+an authenticator app's QR code), `SPECTRA_LOGIN_HEADER` (`Name: value`), `SPECTRA_LOGIN_COOKIES` and
+`SPECTRA_LOGIN_STORAGE` (`name=value; name2=value2`).
+
+**In `spectra.config.json`**, for every tool at once (the non-secret parts only; Spectra refuses a file that holds a
+password, a code secret, a header value, cookies or storage entries):
+
+```json
+{ "signIn": { "method": "form", "url": "http://localhost:3000/login", "username": "demo@example.com" } }
+```
+
+**Keeping secrets safe.** Secrets stay in memory: they are never written to disk, a report, a log or an error message,
+and the dashboard's status never carries them. Signing in happens before recording, so no trace contains it. Spectra
+never solves CAPTCHAs: it stops before sending anything and asks you to sign in yourself. Use a test account where you
+can. If a session expires and the app sends Spectra back to its login page, Spectra signs in again.
 
 If the page still answers with an HTTP error, the toolbar shows a red banner and the report starts with a critical
 **“The page itself failed to load”** finding, because a recording of an error page tells you nothing about your app.
@@ -162,7 +195,7 @@ Above the tabs, the report bar shows what was recorded (mode, duration, CPU slow
    **↗ editor** link, its time, how many findings it appears in, **What to do**, and **Show the finding**, which
    jumps to and expands that finding below. It is built from the findings' exact culprits, topped up with the
    slowest functions, and honours **Hide node_modules**. The rotation is off if your system asks for reduced motion.
-2. **Vital signs** — four headline cards (**total blocking time, longest task, slowest interaction, wasted React
+2. **Vital signs** — four headline cards (**total blocking time, longest task, slowest interaction, wasted
    renders**), each with a big value, a rating (**Good / Needs work / Poor**, as icon + label, not only colour) and a
    gauge whose coloured zones are the good / needs-work / poor ranges, with the actual value as a needle and the
    thresholds written underneath. The remaining six — LCP, FCP, layout shift, DOM nodes, JS heap growth, forced
@@ -204,25 +237,28 @@ bundle it is and how much time it costs; the call tree shows which app code call
 
 ### Other tabs
 
-- **Page map** — a screenshot of the page *as it was when you pressed Stop*. The slowest React components are
+- **Page map** — a screenshot of the page *as it was when you pressed Stop*, for any app. The slowest React, Vue or
+  Angular components are
   pointed out with **numbers in the left and right margins**, each joined by a thin line to its element (faintly
   outlined on the page). The numbers are spaced so they never overlap, however deeply the elements are nested, and only
   the numbers react to the pointer, so the map stays responsive. **Hover or focus a number** (or its row in the list on
   the right) to highlight that element and open a card with the component's file and line, self time, renders, wasted
   renders, why it rendered and a suggested fix; **click** it to open the source. Orange = most time, amber = mostly
-  wasted renders, blue = minor. Limits: it needs a **React development build** and a recording made with this
-  version of the tool (older reports show a “No page map” message); it shows the **viewport**, not the whole
+  wasted renders, blue = minor. Limits: the pins need a **development build** of React, Vue or Angular (any other
+  app gets the screenshot alone) and a recording made with Spectra 0.5 or later (older reports show a “No page map”
+  message); it shows the **viewport**, not the whole
   scrollable page; when a component appears many times only its largest instance is pointed out; page-sized
   wrappers are left out because they say nothing about where the time goes. It shows only what rendered *during the
   recording*.
 - **File tree** — every folder and file is **coloured and sized by heat**, hottest first, with the paths to the top
-  culprits pre-expanded. Choose the metric: CPU self time, main-thread blocking, React render time, wasted renders,
-  render count, forced reflows. Click a folder to expand, a file to open the side panel (its functions, its React
+  culprits pre-expanded. Choose the metric: CPU self time, main-thread blocking, component render time, wasted renders,
+  component renders, forced reflows. Click a folder to expand, a file to open the side panel (its functions, its
   components, its source with hot functions marked in the gutter). Wheel scrolls, **Ctrl/Cmd + wheel** or pinch zooms.
   Dashed circles are library code.
 - **Call tree** — top-down call paths with total and self time; opens on the function with the most self time. Click a
   circle to expand/collapse, a label to open its file.
-- **React** — every component that rendered: renders, **wasted** renders, self time, average and slowest render.
+- **Components** — every React, Vue or Angular component that rendered, under the framework's name: renders,
+  **wasted** renders, self time, average and slowest render.
   Click a row for *why it rendered* (props / state / hooks / context / parent) and which props changed, including the
   ones recreated with identical contents.
 - **Long tasks** — a timeline of main-thread tasks and every task ≥ 50 ms with its trigger, a scripting/layout/style/
@@ -261,7 +297,7 @@ or a detailed report).
    verdict without the dashboard.
 5. Read the verdict, then press **PDF summary** (for the PR description) or **PDF detailed report** (for the record).
 
-> Why snapshots and not raw traces? A raw Chrome trace has no React data and no source-file attribution; the profiler
+> Why snapshots and not raw traces? A raw Chrome trace has no component data and no source-file attribution; the profiler
 > *report* (which is what a snapshot is) holds everything that gets compared. Snapshots are small (typically < 1 MB).
 
 ### What you see
@@ -271,17 +307,17 @@ or a detailed report).
   the email. **⇄** swaps the sides.
 - **Verdict** — *Improved*, *Regressed*, *Mixed* or *No significant change*, with a **confidence** level, and counts of
   metrics that improved / degraded / stayed the same. The verdict is decided only by the **key** metrics: total blocking
-  time, long tasks, slowest interaction, LCP, layout shift, JavaScript CPU time, forced reflows, wasted React renders and
+  time, long tasks, slowest interaction, LCP, layout shift, JavaScript CPU time, forced reflows, wasted component renders and
   JS heap growth. *Improved* = some improved and none degraded; *Regressed* = some degraded and none improved; *Mixed* = both.
 - **Highlights** — the biggest moves in plain sentences, e.g. `Total blocking time: 423 ms → 61.4 ms (−85%)` or
   `Row (src/Row.jsx) — renders: 14,400 → 0 (−100%)`.
 - **Can this comparison be trusted?** — checks that the two sides are comparable: same page, same mode, same CPU
-  throttling, similar recording length, enough runs (3+ per side), React timings present, same file-attribution mode, no
+  throttling, similar recording length, enough runs (3+ per side), component timings present, same file-attribution mode, no
   error pages, no near-idle recordings, no uncommitted changes, and not the same commit on both sides.
-- **Metrics** — about 27 metrics in groups (responsiveness, loading, CPU and main thread, layout work, React, memory and DOM,
+- **Metrics** — about 27 metrics in groups (responsiveness, loading, CPU and main thread, layout work, components, memory and DOM,
   network), each with before, after, change, a small bar and an **Improved / Degraded / Unchanged** label. Filter by result.
   Lower is better for every one of them.
-- **What changed, in detail** — for **React components**, **files** and **functions**: what degraded, what is mixed, what
+- **What changed, in detail** — for **components**, **files** and **functions**: what degraded, what is mixed, what
   improved, what is *newly active* (a new cost) and what is *no longer active* (a cost that went away, e.g. a component that
   stopped re-rendering after `React.memo`). Every row says exactly which sub-metric moved (renders, wasted renders, render
   time, CPU, blocking time, forced reflows…). Plus **Problems**: findings that are *new*, *resolved* or *persisting*, with
@@ -353,10 +389,10 @@ an icon (✓ ✕ =) and a word.
 | --- | --- |
 | `npm install` / `npm run dev` / `npx spectra` fails with syntax or engine errors | Your Node is older than 18. Switch this terminal to Node 18+ (`nvm use 18`). |
 | **“Chrome was not found”** | Set `CHROME_PATH` to the executable, e.g. `CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" npm run dev`. |
-| Chrome opens on `{"message":"Internal error"}` at `/login/?next=…` | The login route may require a special query parameter (see [Signing in](#signing-in)). Fill in the **Sign-in URL**, close Chrome and launch again. |
+| Chrome opens on an error at the app's login route | The login route may need a different URL or a special query parameter. Give the right **Login page** (or `--login-url`), close Chrome and launch again (see [Signing in](#signing-in)). |
 | Red banner “The page answered HTTP 4xx/5xx” | The page failed to load — usually not signed in, or the backend/dev server is down. Check <http://localhost:3000> in a normal browser. |
-| Amber pill “No React seen — reload the tab” | Press **Reload** (or use **Record page load**). The probe must load before React. |
-| “production build: no timings” | React is a production build. Profile the dev server, not a built bundle. |
+| Pill “No component framework seen” on a React, Vue or Angular app | Press **Reload** (or use **Record page load**). The probe must load before the framework. On any other app it is expected. |
+| “production build: no timings” | The framework is a production build. Profile the dev server, not a built bundle. |
 | Report says “Almost nothing ran…” | You recorded an idle page. Interact while recording, or use **Record page load**. |
 | Everything is attributed to `bundle:main.js` and notes say “no source maps and no webpack module markers” | You are profiling a production/minified bundle. Use the dev server. |
 | Lines show `≈` | Expected for webpack dev bundles (no source maps): the line is located by function name. |
@@ -366,12 +402,12 @@ an icon (✓ ✕ =) and a word.
 | “Chrome could not start because another Chrome is already using the profile…” | The dashboard's Chrome window (or another CLI run) holds Spectra's private profile. Click **Close Chrome** in the dashboard first, or give the second run its own profile: `PERF_CHROME_PROFILE_DIR=/tmp/spectra-2 npx spectra performance …`. |
 | `spectra compare`: “… is a golden-path evaluation” | Compare single-page profiles: `spectra performance --quick --runs 5 --out before.json` (and again for `after.json`), or two journey reports by id. |
 | A command exits with code `2` | It ran, but a budget in `spectra.config.json` was exceeded, or `compare --fail-on-regression` found a regression. The tables printed above the exit say which. |
-| Compare: “This is a raw Chrome trace” | You uploaded a `.trace.json`. Comparison needs the profiler **report**: open it and use **Snapshot for comparison** (the trace has no React or source-file data). |
+| Compare: “This is a raw Chrome trace” | You uploaded a `.trace.json`. Comparison needs the profiler **report**: open it and use **Snapshot for comparison** (the trace has no component or source-file data). |
 | Compare: “No commit … in this repository” | The hash is not in your local clone. `git fetch` the PR branch first, then press **Look up** again. |
 | Compare: “Chrome was not found” when saving a PDF | PDFs are printed by headless Chrome. Set `CHROME_PATH` (see Configuration). |
 | “The raw trace of this recording was not kept” | Only the newest recording's trace is held in memory. Tick **save raw trace** before recording if you want to keep it, or re-record. |
 | The launched Chrome has none of your extensions, bookmarks or logins | Expected: it is a separate, clean profile so extensions don't distort measurements. |
-| Signed out again after closing Chrome | Expected (session cookies); the Sign-in URL handles it automatically. |
+| Signed out again after closing Chrome | Expected (session cookies). Turn on **My app needs a sign-in** and Spectra signs in each time. |
 
 If something else is wrong, the profiler's terminal prints server-side errors, and the red bar on the page shows the
 message returned to the UI.
@@ -400,7 +436,8 @@ npx spectra reports
 
 A scenario module default-exports `async page => { … }` (a Puppeteer `Page`). The recording lasts as long as the
 scenario runs, and with `--runs` the page is reloaded before every run. Other flags: `--headed` (watch it run),
-`--save-trace` (keep the raw trace) and `--sign-in "…{url}"` (the headless browser starts signed out too). In a
+`--save-trace` (keep the raw trace) and the `--login…` options (the headless browser starts signed out too; see
+[Signing in](#signing-in)). In a
 checkout of this repository, `npm run profile -- --url … [options]` runs the same single-page profiler.
 `npx spectra --help` lists every option.
 
@@ -551,7 +588,7 @@ golden-path summaries) and Spectra's private Chrome profile in your temp directo
 ```
 Chrome ──CDP──▶ Tracing      main-thread tasks, layout, style, paint, GC, V8 CPU samples (one clock)
                Debugger      script ids, source-map URLs, script sources
-               Runtime       in-page probe: React fibers + PerformanceObserver vitals
+               Runtime       in-page probe: React, Vue and Angular hooks + PerformanceObserver vitals
                Performance / Memory / Emulation   heap, DOM nodes, layout counts, CPU throttling
 ```
 
@@ -565,6 +602,10 @@ Chrome ──CDP──▶ Tracing      main-thread tasks, layout, style, paint, 
 - **React**: the probe installs a `__REACT_DEVTOOLS_GLOBAL_HOOK__` before React loads (React 16.9+, 17, 18), walks each
   commit and compares every rendered component with its previous version to decide *why* it rendered and whether the
   render was wasted. A component's file comes from its function's real location.
+- **Vue and Angular**: the probe also listens on Vue's DevTools hook (component mounts, updates and render time) and
+  registers with Angular's development-mode profiler (per-component change detection, nested into self time). All three
+  are installed on every page and each wakes up only when its framework appears, so the framework is the one the page
+  really runs, wherever Spectra was started from.
 - **Builtins** (`Array.sort`, `performance.now`…) are billed to the JavaScript function that called them, and anonymous
   callbacks are named after their enclosing function.
 - **Noise control**: the CPU-profiler start-up stall is discarded; LCP/FCP are only reported for page-load recordings;
@@ -573,7 +614,7 @@ Chrome ──CDP──▶ Tracing      main-thread tasks, layout, style, paint, 
 
 **Limits.** The probe and profiler add overhead (the report shows the probe's own cost) — compare recordings taken the
 same way. Webpack-concatenated modules are attributed to the first module of the group. Line numbers are best-effort
-without source maps. React data needs a development or profiling React build. It measures *your machine*, not production.
+without source maps. Component data needs a development (or profiling) build of the framework. It measures *your machine*, not production.
 
 ## Technical deep dive: capture, correlation and report generation
 
@@ -590,7 +631,7 @@ A recording is not one data source — it is three, started together in `PerfSes
 | --- | --- | --- | --- |
 | **Browser trace** | `Tracing.start` | Every main-thread task Chrome itself performs: layout, style recalculation, paint, GC, script evaluation, timers, event dispatch — as nested, timed spans. | `server/analysis/trace.js` |
 | **V8 CPU profile** | *(carried inside the same trace)* | A sampled call stack of the actual JavaScript running, at roughly sub-millisecond resolution, independent of what Chrome's own instrumentation points call out. | `server/analysis/cpu.js` |
-| **In-page probe** | `Page.addScriptToEvaluateOnNewDocument` + `Runtime.evaluate` | What Chrome's trace *cannot* see from outside the page: which React component rendered, why, whether it was wasted, plus Web Vitals (long tasks as the browser defines them, layout shifts, LCP/FCP, slow interactions). | `server/probe.browser.js` |
+| **In-page probe** | `Page.addScriptToEvaluateOnNewDocument` + `Runtime.evaluate` | What Chrome's trace *cannot* see from outside the page: which component (React, Vue or Angular) rendered, why, whether it was wasted, plus Web Vitals (long tasks as the browser defines them, layout shifts, LCP/FCP, slow interactions). | `server/probe.browser.js` |
 
 They run concurrently for the whole recording and are reconciled only once, after `Tracing.end`, inside
 `buildReport()`. Nothing is sampled or inferred after the fact from a single log — each instrument is a live,
@@ -775,7 +816,9 @@ records its own `startTime` on `performance.now()`'s clock and is filtered, on s
 occurred after the current recording's `probe.start()` — so vitals from before you pressed Record never leak into
 the report.
 
-**Where each component is on screen (the Page map).** The probe also remembers every React root it has seen.
+**Where each component is on screen (the Page map).** For Vue and Angular, `probe.layout()` asks each element which
+component rendered it (`__vueParentComponent`, `ng.getComponent`) and unions those boxes the same way. For React,
+the probe remembers every React root it has seen.
 After the trace has been drained, `probe.layout()` walks the live fiber tree once; for each component that rendered
 during the recording it takes the bounding boxes of the *outermost DOM nodes it renders* (descending until the first
 host element, never into portals), unions them, clips to the viewport and drops anything under 16 px. Per component
@@ -791,7 +834,7 @@ ends, so it never adds events to the trace, and any failure simply leaves the re
 ```
 connect()        attachPage(): enable Debugger/Page/Performance, inject the probe script
                   (script registry starts filling as Debugger.scriptParsed events arrive)
-navigate()        load the target page (retrying through the Sign-in URL if it looks signed out)
+navigate()        load the target page, signing in first when it asks for a login (signin.js)
 start()           optional: Emulation.setCPUThrottlingRate
                   live mode:  Runtime.evaluate("__PERF_PROBE__.start()")  — probe starts recording now
                   load mode:  inject an autostart script, then Page.reload — probe starts at the next navigation
@@ -966,7 +1009,7 @@ bin/spectra.js             the CLI: performance, compare, reports, dashboard
 server/probe.browser.js    in-page probe (React / Vue / Angular hooks + vitals + component screen positions), injected before the app loads
 server/chrome.js           find / launch / attach Chrome
 server/recorder.js         CDP orchestration: start/stop, trace stream, metrics, sign-in, component locations
-server/signin.js           Sign-in URL template + "signed out?" detection
+server/signin.js           signing in: login forms (frames, shadow DOM, two steps, TOTP codes), prompts, tokens, links
 server/git.js              commit / author lookup (name only, never the email)
 server/pdf/                comparison PDF: print-ready HTML (template.js) + headless-Chrome printing (render.js)
 server/analysis/           trace.js · cpu.js · sources.js · locate.js · report.js · findings.js

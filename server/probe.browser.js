@@ -13,13 +13,11 @@
  */
 (function () {
   if (window.__PERF_PROBE__) return;
-  // Runtime hint injected by the profiler: { framework, bundler, isSSR }
+  // What the project's package.json suggests: { framework, bundler, isSSR }. Only
+  // a hint: the page itself decides (every adapter below waits for its own
+  // framework to show up), so an Angular app is profiled as Angular even when
+  // Spectra runs from another folder, a monorepo root or an editor.
   var SPECTRA_FRAMEWORK = typeof window.__SPECTRA_FRAMEWORK__ !== 'undefined' ? window.__SPECTRA_FRAMEWORK__ : null;
-  var WANT_REACT =
-    !SPECTRA_FRAMEWORK ||
-    SPECTRA_FRAMEWORK.framework === 'react' ||
-    SPECTRA_FRAMEWORK.framework === 'next' ||
-    SPECTRA_FRAMEWORK.framework === 'unknown';
 
   var PERFORMED_WORK = 1;
   var TAG_FUNCTION = 0;
@@ -482,11 +480,77 @@
     ];
   }
 
+  // The box an element occupies, clipped to the viewport. A component host that
+  // is an inline wrapper (Angular's <app-x>, Vue fragments) can have no box of
+  // its own, so it falls back to the union of its children's boxes.
+  function elementRect(el, vw, vh, depth) {
+    var left = Infinity;
+    var top = Infinity;
+    var right = -Infinity;
+    var bottom = -Infinity;
+    var r = el.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) {
+      left = r.left;
+      top = r.top;
+      right = r.right;
+      bottom = r.bottom;
+    } else if ((depth || 0) < 3) {
+      for (var c = el.firstElementChild; c; c = c.nextElementSibling) {
+        var cr = elementRect(c, Infinity, Infinity, (depth || 0) + 1);
+        if (!cr) continue;
+        left = Math.min(left, cr[0]);
+        top = Math.min(top, cr[1]);
+        right = Math.max(right, cr[0] + cr[2]);
+        bottom = Math.max(bottom, cr[1] + cr[3]);
+      }
+    }
+    if (left === Infinity) return null;
+    left = Math.max(0, left);
+    top = Math.max(0, top);
+    right = Math.min(vw, right);
+    bottom = Math.min(vh, bottom);
+    if (vw !== Infinity && (right - left < 16 || bottom - top < 16)) return null;
+    return [Math.round(left), Math.round(top), Math.round(right - left), Math.round(bottom - top)];
+  }
+
+  // Angular (development mode) and Vue: find each component's element in the DOM.
+  // Angular: ng.getComponent(host) is the component an element hosts. Vue 3: an
+  // element's __vueParentComponent is the component that rendered it, and it is
+  // that component's root element when the component's subTree points back at it.
+  function frameworkLayout(byId, vw, vh) {
+    var ng = window.ng;
+    var useNg = probe.ngIds && ng && typeof ng.getComponent === 'function';
+    var useVue = !!probe.vueIds;
+    if (!useNg && !useVue) return;
+    var els = document.querySelectorAll('*');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      var id = undefined; // var is function-scoped: reset it for every element
+      if (useNg) {
+        var inst = null;
+        try {
+          inst = ng.getComponent(el);
+        } catch (e) {}
+        if (inst) id = probe.ngIds.get(inst.constructor);
+      }
+      if (id === undefined && useVue) {
+        var vc = el.__vueParentComponent;
+        if (vc && ((vc.subTree && vc.subTree.el === el) || (vc.vnode && vc.vnode.el === el))) id = probe.vueIds.get(vc.type);
+      }
+      if (id === undefined || !probe.stats[id]) continue;
+      var rect = elementRect(el, vw, vh);
+      if (rect) (byId[id] = byId[id] || []).push(rect);
+    }
+  }
+
   // Where every component that rendered during the recording sits in the viewport.
   probe.layout = function () {
     var vw = window.innerWidth;
     var vh = window.innerHeight;
     var byId = {};
+    try {
+      frameworkLayout(byId, vw, vh);
+    } catch (e) {}
     probe.roots.forEach(function (root) {
       var stack = [root.current];
       while (stack.length) {
@@ -586,9 +650,9 @@
   };
 
   window.__PERF_PROBE__ = probe;
-  // Only attempt to hook into React when the runtime hint allows it.
+  // React's hook is ignored by every other framework, so it is always there.
   try {
-    if (WANT_REACT) installHook();
+    installHook();
   } catch (e) {
     // Fail silently: probe should still collect vitals even if hooking fails.
   }
@@ -600,6 +664,7 @@
   // from the SFC compiler (type.__file), so no source-map step is needed.
   function installVueAdapter() {
     var vueIds = new Map();
+    probe.vueIds = vueIds; // for the page map: component type -> stat id
     var nextId = 0;
     var perfStart = {};
 
@@ -718,7 +783,6 @@
       if (prevEmit) try { prevEmit.apply(null, arguments); } catch (e) {}
     };
     window.__VUE_DEVTOOLS_GLOBAL_HOOK__ = hook;
-    probe.frameworkName = 'vue';
   }
 
   // ------------------------------------------------ Angular adapter
@@ -729,6 +793,7 @@
   // like React/Vue. The ng global appears only after bootstrap, so we poll.
   function installAngularAdapter() {
     var ngIds = new Map();
+    probe.ngIds = ngIds; // for the page map: component class -> stat id
     var nextId = 100000; // keep clear of other adapters' id space
     var stack = [];
 
@@ -825,11 +890,12 @@
       return false;
     }
     if (!register()) {
+      // poll for up to 30 s, and stop as soon as another framework shows up
       var tries = 0;
       var iv = setInterval(function () {
         tries++;
-        if (register() || tries > 200) clearInterval(iv); // poll up to ~8s
-      }, 40);
+        if (register() || probe.renderers > 0 || probe.frameworkName === 'vue' || tries > 300) clearInterval(iv);
+      }, 100);
     }
   }
 
@@ -931,11 +997,16 @@
     } catch (e) {}
   }
 
+  // Vue and Angular too, whatever the hint says: each wakes up only for its own app
+  try {
+    installVueAdapter();
+  } catch (e) {}
+  try {
+    installAngularAdapter();
+  } catch (e) {}
   try {
     var fwHint = SPECTRA_FRAMEWORK && SPECTRA_FRAMEWORK.framework;
-    if (fwHint === 'vue') installVueAdapter();
-    else if (fwHint === 'angular') installAngularAdapter();
-    else if (!WANT_REACT) installFrameworkProbes(); // svelte: heuristic for now
+    if (fwHint === 'svelte') installFrameworkProbes(); // svelte: heuristic for now
   } catch (e) {}
   installObservers();
 })();

@@ -17,6 +17,7 @@ import { PerfSession, readReport } from './recorder.js';
 import { REPORTS_DIR, TARGET_NAME } from './config.js';
 import { intOption, parseArgs } from './args.js';
 import { loadProjectConfig } from './project-config.js';
+import { SIGN_IN_HELP, logSignIn, signInFromOptions } from './signin.js';
 import { EXIT, SPECTRA_VERSION, exitAfterFlush, fmt, printBudgets, reportFile, writeResult } from './output.js';
 import { buildProfileResult } from '../shared/result.js';
 
@@ -25,7 +26,8 @@ const { opt, flag } = parseArgs(process.argv.slice(2));
 const url = opt('url');
 if (!url || flag('help')) {
   console.error(
-    'usage: npm run profile -- --url <page> [--mode live|load] [--runs n] [--duration seconds] [--throttle 4] [--scenario file.mjs] [--json] [--out file.json] [--config spectra.config.json] [--headed] [--save-trace] [--sign-in "http://host/login/?redirect={url}"]',
+    'usage: npm run profile -- --url <page> [--mode live|load] [--runs n] [--duration seconds] [--throttle 4] [--scenario file.mjs] [--json] [--out file.json] [--config spectra.config.json] [--headed] [--save-trace] [sign-in options]\n\n' +
+      SIGN_IN_HELP,
   );
   process.exit(url ? EXIT.OK : EXIT.ERROR);
 }
@@ -36,7 +38,7 @@ const out = opt('out');
 const log = json ? console.error : console.log;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-let mode, runs, duration, cpuThrottle, config, scenario;
+let mode, runs, duration, cpuThrottle, config, scenario, signIn;
 try {
   mode = opt('mode', 'live');
   if (!['live', 'load'].includes(mode)) throw new Error(`--mode must be live or load (got ${mode}).`);
@@ -44,6 +46,7 @@ try {
   duration = Number(opt('duration', 8)) * 1000;
   cpuThrottle = Number(opt('throttle', 1));
   config = loadProjectConfig(opt('config'));
+  signIn = signInFromOptions(opt, config.signIn);
   const scenarioFile = opt('scenario');
   if (scenarioFile) scenario = (await import(pathToFileURL(path.resolve(scenarioFile)).href)).default;
 } catch (err) {
@@ -82,7 +85,7 @@ async function recordOnce(session, index) {
   if (mode === 'load') return recordLoad(session, startOpts);
   // live: every run starts from the same freshly loaded page
   if (index > 0) {
-    await session.navigate(url, opt('sign-in'));
+    await session.navigate(url, signIn);
     await sleep(800);
   }
   await session.start(startOpts);
@@ -128,10 +131,13 @@ function printProfile(result, reports) {
 }
 
 const session = new PerfSession();
+logSignIn(session);
 const reports = [];
 let code = EXIT.OK;
 try {
-  await session.connect({ mode: 'launch', url, headless: !flag('headed'), signIn: opt('sign-in') });
+  // signing in yourself needs the window, so it shows Chrome even without --headed
+  await session.connect({ mode: 'launch', url, headless: !flag('headed') && signIn?.method !== 'manual', signIn });
+  if (session.signedIn) console.error('spectra: signed in');
   await sleep(1500);
   await session.reload(); // make sure the probe was installed before the app loaded
   await sleep(1000);

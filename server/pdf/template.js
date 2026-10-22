@@ -356,7 +356,7 @@ function methodology() {
   ).join('');
   return `<h2>Methodology</h2>
     <div class="callout">
-      <p><b>What is compared.</b> Profiler reports recorded in Chrome through the DevTools Protocol (tracing, V8 CPU sampling and an in-page React probe). When a side has several runs, each metric is the <b>median</b> of its runs.</p>
+      <p><b>What is compared.</b> Profiler reports recorded in Chrome through the DevTools Protocol (tracing, V8 CPU sampling and an in-page probe for React, Vue and Angular components). When a side has several runs, each metric is the <b>median</b> of its runs.</p>
       <p><b>What counts as a change.</b> A metric is “improved” or “degraded” only when the difference exceeds <b>all three</b> of: its absolute floor, its relative floor (both in the table below) and the <b>run-to-run spread</b> seen on either side. Everything else is “unchanged”. For every metric listed here <b>lower is better</b>.</p>
       <p><b>Overall verdict.</b> Decided only by the <i>key</i> metrics: improved if some improved and none degraded; regressed if some degraded and none improved; mixed if both; otherwise no significant change.</p>
       <p><b>Limits.</b> A single run per side cannot separate a real change from noise: record each side at least three times, on the same page, in the same mode, with the same CPU setting. Interaction recordings are only comparable if the same actions were performed. Dev builds are slower than production: trust direction and ranking more than absolute numbers.</p>
@@ -396,7 +396,7 @@ function detailedBody(cmp) {
     <h2>Highlights</h2>${headlines(cmp)}
     <h2>Comparability</h2>${checksList(cmp, { onlyProblems: false })}
     <h2 class="pagebreak">All metrics</h2>${metricsTable(cmp.metrics, { grouped: true })}
-    <div class="pagebreak"></div>${entitySection('React components', 'components', cmp, { vendor: false })}
+    <div class="pagebreak"></div>${entitySection('Components', 'components', cmp, { vendor: false })}
     <div class="pagebreak"></div>${entitySection('Files', 'files', cmp, { vendor: false })}
     <div class="pagebreak"></div>${entitySection('Functions', 'functions', cmp, { vendor: false })}
     <div class="pagebreak"></div><h2>Problems found</h2>${findingsSection(cmp, { limit: 0 })}

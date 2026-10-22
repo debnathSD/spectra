@@ -1,3 +1,4 @@
+import { reportFramework } from '../framework.js';
 import { useMemo, useState } from 'react';
 import { fmtMs, fmtNumber } from '../format.js';
 
@@ -34,7 +35,7 @@ function buildPins(report, hideVendor) {
   return pool
     .sort((a, b) => b.c.selfMs + b.c.wastedMs - (a.c.selfMs + a.c.wastedMs))
     .slice(0, MAX_PINS)
-    .map((p, i) => ({ ...p, key: `${p.c.id}`, n: i + 1 }));
+    .map((p, i) => ({ ...p, fw: report.react?.framework || 'react', key: `${p.c.id}`, n: i + 1 }));
 }
 
 function severityOf(c, maxSelf) {
@@ -46,6 +47,14 @@ function topReason(c) {
   const [key, n] =
     Object.entries(c.reasons).sort((a, b) => b[1] - a[1])[0] || [];
   return n ? `${n}× ${REASON_LABELS[key]}` : null;
+}
+
+// what to do about renders that changed nothing, in the framework's own terms
+function wastedFix(fw) {
+  if (fw === 'vue') return <>pass stable props (no new objects or functions inline), or use <code>v-memo</code> for parts that rarely change.</>;
+  if (fw === 'angular') return <>use <code>ChangeDetectionStrategy.OnPush</code> and pass new references only when data changes.</>;
+  if (fw === 'react' || fw === 'next') return <>wrap in <code>React.memo</code> or stop the parent re-rendering.</>;
+  return <>stop the parent re-rendering it when nothing changed.</>;
 }
 
 function Details({ pin }) {
@@ -88,8 +97,7 @@ function Details({ pin }) {
       )}
       {!unstable && c.wasted > 0 && (
         <p className="pin-fix">
-          Fix: {fmtNumber(c.wasted)} renders changed nothing — wrap in{' '}
-          <code>React.memo</code> or stop the parent re-rendering.
+          Fix: {fmtNumber(c.wasted)} renders changed nothing — {wastedFix(pin.fw)}
         </p>
       )}
       {pin.count > 1 && (
@@ -237,8 +245,9 @@ function Callouts({ pins, pageView, active, onActivate, onOpenFile, maxSelf }) {
 
 /**
  * Screenshot of the page at the moment recording stopped, with the slowest
- * React components outlined where they sit on screen. Hover or focus a pin for
- * the file, render counts and a fix; click it to open the source.
+ * components (React, Vue or Angular) outlined where they sit on screen. Hover
+ * or focus a pin for the file, render counts and a fix; click it to open the
+ * source. Pages without component data still show the screenshot.
  */
 export default function PageMap({ report, hideVendor, onOpenFile }) {
   const { pageView } = report;
@@ -265,30 +274,23 @@ export default function PageMap({ report, hideVendor, onOpenFile }) {
       <div className="empty">
         <b>No page map for this report</b>
         <span>
-          It needs a development build of a React app and a recording made with
-          this version of the profiler. Older reports and production builds have
-          none.
-        </span>
-      </div>
-    );
-  if (!pins.length)
-    return (
-      <div className="empty">
-        <b>No slow components are visible on screen</b>
-        <span>
-          Nothing that rendered during the recording is currently on screen (or
-          everything is hidden by “Hide node_modules”).
+          Recordings from Spectra 0.5 on include a screenshot of every page.
+          This one was made with an earlier version, or the screenshot failed.
         </span>
       </div>
     );
 
+  const fw = reportFramework(report);
   return (
-    <div className="page-map">
+    <div className={`page-map${pins.length ? '' : ' no-pins'}`}>
       <div className="page-stage">
         <p className="muted page-caption">
-          Screenshot taken when the recording stopped. Numbers in the margins
-          point to the components that spent the most time rendering and are on
-          screen now; hover a number for details.
+          Screenshot taken when the recording stopped.{' '}
+          {pins.length
+            ? 'Numbers in the margins point to the components that spent the most time rendering and are on screen now; hover a number for details.'
+            : fw
+              ? `None of the ${fw} components that did measurable work are on screen now${hideVendor ? ', or they are hidden by “Hide node_modules”' : ''}.`
+              : 'No React, Vue or Angular components were seen, so there is nothing to pin; the Culprits and File tree tabs show where the time went.'}
         </p>
         <Callouts
           pins={pins}
@@ -299,6 +301,7 @@ export default function PageMap({ report, hideVendor, onOpenFile }) {
           onOpenFile={onOpenFile}
         />
       </div>
+      {pins.length > 0 && (
       <aside className="page-list" aria-label="Components on this page">
         <h2>Hot spots on this page</h2>
         <ol>
@@ -324,6 +327,7 @@ export default function PageMap({ report, hideVendor, onOpenFile }) {
           ))}
         </ol>
       </aside>
+      )}
     </div>
   );
 }

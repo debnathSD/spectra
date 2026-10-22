@@ -66,7 +66,7 @@ export function buildFindings(report) {
       severity: 'warning',
       category: 'Setup',
       title: `Almost nothing ran during this ${(report.meta.durationMs / 1000).toFixed(0)} s recording`,
-      detail: `Only ${fmt(totals.activeMs)} of JavaScript executed${react.detected ? ` and React committed ${commits} times` : ''}, so there is nothing slow to point at.`,
+      detail: `Only ${fmt(totals.activeMs)} of JavaScript executed${react.detected ? ` and ${{ vue: 'Vue', angular: 'Angular', svelte: 'Svelte' }[react.framework] || 'React'} updated components ${commits} times` : ''}, so there is nothing slow to point at.`,
       pinned: 1,
       fix: 'Press Record, then use the page (open a dashboard, scroll, type, switch tabs) before you press Stop — or use “Record page load” to profile startup.',
     });
@@ -237,7 +237,18 @@ export function buildFindings(report) {
         ? 'Svelte'
         : fw === 'angular'
           ? 'Angular'
-          : 'React';
+          : fw === 'react' || fw === 'next'
+            ? 'React'
+            : 'Components';
+  // renders that changed nothing: the remedy in each framework's own terms
+  const wastedFix = unstable =>
+    fw === 'vue'
+      ? `Pass stable props${unstable ? ` (${unstable.prop} is a new ${unstable.kind} each time)` : ''}, and use v-memo for parts that rarely change.`
+      : fw === 'angular'
+        ? `Use ChangeDetectionStrategy.OnPush${unstable ? ` and keep ${unstable.prop} the same reference until its data changes` : ', and pass new references only when data changes'}.`
+        : unstable
+          ? `Wrap in React.memo, and stabilise the props that keep changing identity (${unstable.prop}: ${unstable.kind}).`
+          : 'Wrap in React.memo, or stop the parent re-rendering (move state down, split the component).';
   const slowFix =
     fw === 'vue'
       ? 'Move expensive work into a computed property, use v-memo/v-once for static subtrees, and virtualise long lists.'
@@ -281,9 +292,7 @@ export function buildFindings(report) {
             ),
           ],
           impactMs: c.wastedMs,
-          fix: unstable
-            ? `Wrap in React.memo, and stabilise the props that keep changing identity (${unstable.prop}: ${unstable.kind}).`
-            : 'Wrap in React.memo, or stop the parent re-rendering (move state down, split the component).',
+          fix: wastedFix(unstable),
         });
       });
     react.components
@@ -389,11 +398,11 @@ export function buildFindings(report) {
     add({
       id: 'react-missing',
       severity: 'info',
-      category: CAT,
-      title: `No ${CAT === 'React' ? 'React renderer' : CAT + ' app'} was seen on this page`,
+      category: 'Components',
+      title: 'No component framework was seen on this page',
       detail:
-        'The probe must be installed before the framework loads (use “Reload & record”), and component-level timings need a development build.',
-      fix: 'Click “Record page load”, or reload the tab from this tool.',
+        'Files and functions are profiled for any app. For per-component data in React, Vue or Angular, the probe must be installed before the framework loads, and component timings need a development build.',
+      fix: 'If the app uses one of them, click “Record page load”, or reload the tab from this tool.',
     });
   }
 

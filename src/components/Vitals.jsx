@@ -28,7 +28,7 @@ const RATINGS = [
   },
   {
     key: 'wasted',
-    label: 'Wasted React renders',
+    label: 'Wasted renders',
     get: r =>
       r.react.detected
           ? (r.react && r.react.components ? r.react.components.reduce((s, c) => s + c.wasted, 0) : 0)

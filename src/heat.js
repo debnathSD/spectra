@@ -15,9 +15,9 @@ export const FILE_METRICS = [
   },
   {
     id: 'reactMs',
-    label: 'React render time',
+    label: 'Component render time',
     unit: 'ms',
-    hint: 'Time React spent rendering components defined in this file (self time).',
+    hint: 'Time spent rendering components defined in this file (self time), in React, Vue or Angular.',
   },
   {
     id: 'wasted',
@@ -27,7 +27,7 @@ export const FILE_METRICS = [
   },
   {
     id: 'renders',
-    label: 'React renders',
+    label: 'Component renders',
     unit: '',
     hint: 'How many times components in this file rendered.',
   },

@@ -11,7 +11,7 @@ export function validateReport(obj) {
     return {
       ok: false,
       reason:
-        'This is a raw Chrome trace (.trace.json). Comparison needs the profiler report: use “Snapshot for comparison” on the report instead — the trace lacks the React and source-file data.',
+        'This is a raw Chrome trace (.trace.json). Comparison needs the profiler report: use “Snapshot for comparison” on the report instead — the trace lacks the component and source-file data.',
     };
   }
   const ok =

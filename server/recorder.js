@@ -19,7 +19,7 @@ import { FRONTEND_ROOT, REPORTS_DIR, SOURCE_ROOTS, FRAMEWORK } from './config.js
 import { SourceIndex } from './analysis/locate.js';
 import { gitInfo } from './git.js';
 import { REPORT_SCHEMA_VERSION } from '../shared/result.js';
-import { buildSignInUrl, looksSignedOut } from './signin.js';
+import { buildSignInUrl, hasLoginForm, looksSignedOut, normalizeSignIn, parsePairs, signInWithForm, waitForManualSignIn } from './signin.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PROBE_SOURCE = fs.readFileSync(
@@ -73,6 +73,11 @@ export class PerfSession extends EventEmitter {
     this.recording = null;
     this.lastError = '';
     this.lastTrace = null;
+    // the sign-in for this browser: kept in memory only, never saved or reported
+    this.signIn = null;
+    this.signedIn = false;
+    this.prepared = '';
+    this.addHeader = null;
   }
 
   setState(state, extra = {}) {
@@ -90,6 +95,11 @@ export class PerfSession extends EventEmitter {
     signIn,
   }) {
     if (this.browser) await this.disconnect();
+    this.signIn = normalizeSignIn(signIn);
+    this.signedIn = false;
+    this.headless = mode !== 'attach' && headless;
+    if (this.signIn?.method === 'manual' && this.headless)
+      throw new Error('Signing in yourself needs a visible Chrome window: turn off Headless (or run with --headed).');
     this.browser =
       mode === 'attach'
         ? await attachChrome(browserURL || 'http://127.0.0.1:9222')
@@ -108,8 +118,13 @@ export class PerfSession extends EventEmitter {
       pages[0] ||
       (await this.browser.newPage());
     await this.attachPage(page);
-    if (url) await this.navigate(url, signIn);
-    this.setState('idle');
+    this.setState('connecting');
+    try {
+      if (url) await this.navigate(url, signIn);
+    } finally {
+      // connected even when signing in failed: the page stays open to look at and retry
+      this.setState('idle');
+    }
   }
 
   async disconnect() {
@@ -154,6 +169,8 @@ export class PerfSession extends EventEmitter {
     this.page = page;
     this.scripts.clear();
     this.injected = [];
+    this.prepared = '';
+    this.addHeader = null;
     const client = await page.createCDPSession();
     this.client = client;
     client.on('Debugger.scriptParsed', e =>
@@ -217,24 +234,142 @@ export class PerfSession extends EventEmitter {
   }
 
   /**
-   * Opens `url`. If that fails or lands on a login screen (the browser profile
-   * starts signed out) and a sign-in URL template is given, signs in through it
-   * and lands on `url` afterwards.
+   * Opens `url`, signed in. Chrome starts signed out, so with a sign-in (given
+   * here, or kept from connect) it first sets up a browser login prompt, token,
+   * cookies or storage entries, then loads the page; if the page still asks for
+   * a login, or a login page was given, it signs in (form or link) or waits for
+   * you to (manual), and lands on `url` afterwards. Once per browser.
    */
   async navigate(url, signIn) {
     this.requirePage();
+    const given = normalizeSignIn(signIn);
+    // new details (the dashboard's form changed): sign in again with them
+    if (given && JSON.stringify(given) !== JSON.stringify(this.signIn)) {
+      this.signIn = given;
+      this.signedIn = false;
+    }
+    const s = this.signIn;
     const go = target =>
       this.page.goto(target, {
         waitUntil: 'domcontentloaded',
         timeout: 60_000,
       });
+    if (s) await this.prepareSignIn(s, url);
     this.navigation = null;
     await go(url);
-    const signInUrl = buildSignInUrl(signIn, url);
-    if (signInUrl && looksSignedOut(this.navigation, this.page.url())) {
-      this.navigation = null;
-      await go(signInUrl);
+    if (!s) return;
+
+    const signedOut = async () =>
+      looksSignedOut(this.navigation, this.page.url()) || (await hasLoginForm(this.page));
+    if (this.signedIn) {
+      // a session can expire (or a journey sign out): sent back to the login page, sign in again
+      if (!looksSignedOut(this.navigation, this.page.url())) return;
+      this.signedIn = false;
     }
+    if (s.method === 'link') {
+      if (await signedOut()) {
+        this.navigation = null;
+        await go(buildSignInUrl(s.url, url));
+      }
+      return;
+    }
+    if (s.method === 'http' || s.method === 'token') {
+      if (await signedOut())
+        throw new Error(`The page still asks for a login after signing in with ${s.method === 'http' ? 'the browser login prompt' : 'the token, cookies or storage entries'}. Check the values.`);
+      this.signedIn = true;
+      return;
+    }
+    // form or manual: when the page asks for it, or straight away when a login page was given
+    if (!s.url && !(await signedOut())) {
+      this.signedIn = true;
+      return;
+    }
+    const loginUrl = s.url ? buildSignInUrl(s.url, url) : '';
+    const was = this.state;
+    this.setState('signing-in', { method: s.method }); // the dashboard says what is going on
+    try {
+      if (s.method === 'manual') {
+        if (loginUrl) await go(loginUrl);
+        await waitForManualSignIn(this.page, { loginUrl, timeoutMs: s.waitMs });
+      } else {
+        try {
+          await signInWithForm(this.page, { ...s, url: loginUrl });
+        } catch (err) {
+          // a login page that shows no form, on an app that is not asking for one: already signed in
+          if (!(loginUrl && /No login form was found/.test(err.message) && !(await signedOut()))) throw err;
+        }
+      }
+    } finally {
+      this.setState(was);
+    }
+    this.signedIn = true;
+    // back to the page to profile, unless the login brought us there
+    const same = (a, b) => {
+      try {
+        const x = new URL(a);
+        const y = new URL(b);
+        return x.origin === y.origin && x.pathname === y.pathname && x.search === y.search;
+      } catch {
+        return a === b;
+      }
+    };
+    if (!same(this.page.url(), url)) {
+      this.navigation = null;
+      await go(url);
+    }
+    if (await signedOut())
+      throw new Error(`Signed in, but ${new URL(url).pathname} still shows a login. Check the login page URL and the details.`);
+  }
+
+  /**
+   * What must be in place before the first request: the answer to the
+   * browser's login prompt, or the token's cookies, storage entries and header.
+   * Cookies and storage are scoped to the page's origin, and the header is
+   * added only to requests to that origin, so it never reaches third parties.
+   */
+  async prepareSignIn(s, url) {
+    let origin;
+    try {
+      origin = new URL(url).origin;
+    } catch {
+      return;
+    }
+    const key = `${origin}|${JSON.stringify(s)}`;
+    if (this.prepared === key) return;
+    if (s.method === 'http') await this.page.authenticate({ username: s.username, password: s.password });
+    if (s.method === 'token') {
+      const cookies = parsePairs(s.cookies);
+      if (cookies.length) await this.page.setCookie(...cookies.map(([name, value]) => ({ name, value, url: origin })));
+      const storage = parsePairs(s.storage);
+      if (storage.length)
+        await this.inject(
+          `(() => { if (location.origin !== ${JSON.stringify(origin)}) return; try { ${storage
+            .map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(v)});`)
+            .join(' ')} } catch (e) {} })();`,
+          { now: false },
+        );
+    }
+    // one header handler at a time: drop the last one (another origin or other details)
+    const client = this.client;
+    if (this.addHeader) {
+      client.off('Fetch.requestPaused', this.addHeader);
+      this.addHeader = null;
+      await client.send('Fetch.disable').catch(() => {});
+    }
+    if (s.method === 'token' && s.headerName && s.headerValue) {
+      const name = s.headerName;
+      const value = s.headerValue;
+      this.addHeader = e => {
+        const headers = Object.entries(e.request.headers)
+          .filter(([n]) => n.toLowerCase() !== name.toLowerCase())
+          .map(([n, v]) => ({ name: n, value: v }));
+        headers.push({ name, value });
+        client.send('Fetch.continueRequest', { requestId: e.requestId, headers }).catch(() => {});
+      };
+      client.on('Fetch.requestPaused', this.addHeader);
+      await client.send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/*`, requestStage: 'Request' }] });
+    }
+    this.prepared = key;
   }
 
   async reload() {
@@ -270,6 +405,8 @@ export class PerfSession extends EventEmitter {
         cpuThrottle: this.recording.cpuThrottle,
       },
       error: this.lastError,
+      // how this browser signs in, without any of the details
+      signIn: this.signIn && { method: this.signIn.method, signedIn: this.signedIn },
     };
   }
 
@@ -461,19 +598,21 @@ export class PerfSession extends EventEmitter {
   }
 
   /**
-   * What the page looks like right now plus where each React component sits on
-   * it, so the report can point from a slow component to its place on screen.
-   * Best effort: any failure just means the report has no page map.
+   * What the page looks like right now plus where each component sits on it
+   * (React, Vue or Angular), so the report can point from a slow component to
+   * its place on screen. The screenshot is taken for every page, with or
+   * without components to pin. Best effort: a failure means no page map.
    */
   async capturePageView() {
     try {
       const { result } = await this.client.send('Runtime.evaluate', {
         expression:
-          'window.__PERF_PROBE__ && __PERF_PROBE__.layout ? __PERF_PROBE__.layout() : null',
+          'window.__PERF_PROBE__ && __PERF_PROBE__.layout ? __PERF_PROBE__.layout() : ' +
+          '{ width: innerWidth, height: innerHeight, scrollX: Math.round(scrollX), scrollY: Math.round(scrollY), entries: [] }',
         returnByValue: true,
       });
       const layout = result.value;
-      if (!layout?.entries?.length) return null;
+      if (!layout?.width || !layout?.height) return null;
       const shot = await this.client.send('Page.captureScreenshot', {
         format: 'jpeg',
         quality: 72,
@@ -491,7 +630,7 @@ export class PerfSession extends EventEmitter {
     }
   }
 
-  /** Function -> source location for each React component seen, via [[FunctionLocation]]. */
+  /** Function -> source location for each React component seen, via [[FunctionLocation]] (Vue and Angular carry their own). */
   async componentLocations(probe) {
     const out = new Map();
     if (!probe?.components?.length) return out;
