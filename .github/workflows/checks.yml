@@ -38,15 +38,15 @@ jobs:
           node-version: 24
       - run: npm install --no-audit --no-fund
       - name: ESLint
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           mkdir -p "$REPORT"
-          if npx eslint . --max-warnings=0 > eslint.txt 2>&1; then
-            echo "ESLint: no problems." > "$REPORT/lint.md"
-          else
-            cat eslint.txt
-            { echo '```'; head -c 4000 eslint.txt; echo '```'; } > "$REPORT/lint.md"
-            exit 1
-          fi
+          code=0
+          npx eslint . --max-warnings=0 -f json -o eslint.json || code=$?
+          node scripts/ci/lint-note.mjs eslint.json --note "$REPORT/lint.md"
+          cat "$REPORT/lint.md"
+          exit $code
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -60,8 +60,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # the oldest and the newest supported Node on Linux, the one between on macOS
           - { os: ubuntu-latest, node: 22 }
-          - { os: ubuntu-latest, node: 24 }
           - { os: ubuntu-latest, node: 26 }
           - { os: macos-latest, node: 24 }
     runs-on: ${{ matrix.os }}
@@ -74,43 +74,25 @@ jobs:
       - run: npm install --no-audit --no-fund
       - name: npm test
         shell: bash
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           mkdir -p "$REPORT"
           set +e
           npm test > test.txt 2>&1
           code=$?
           cat test.txt
-          node scripts/ci/test-note.mjs test.txt "Node ${{ matrix.node }}, ${{ matrix.os }}" > "$REPORT/test-${{ matrix.os }}-${{ matrix.node }}.md"
+          node scripts/ci/test-note.mjs test.txt "Node ${{ matrix.node }}, ${{ matrix.os }}" > note.txt
+          sed '/^---note---$/,$d' note.txt
+          sed '1,/^---note---$/d' note.txt > "$REPORT/test-${{ matrix.os }}-${{ matrix.node }}.md"
           exit $code
       - name: VS Code extension tests
-        if: matrix.os == 'ubuntu-latest' && matrix.node == 24
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         run: npm --prefix vscode test
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: report-test-${{ matrix.os }}-${{ matrix.node }}
-          path: .report/
-          if-no-files-found: ignore
-
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-      - run: npm install --no-audit --no-fund
-      - name: The dashboard
-        run: |
-          mkdir -p "$REPORT"
-          npm run build
-          echo "The dashboard builds: $(ls dist/assets | wc -l | tr -d ' ') files in dist/assets." > "$REPORT/build.md"
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: report-build
           path: .report/
           if-no-files-found: ignore
 
@@ -120,8 +102,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, node: 22 } # the oldest Node Spectra supports
-          - { os: macos-latest, node: 24 }
+          # Linux with the oldest supported Node, and Windows (paths, command shims); macOS runs the tests
+          - { os: ubuntu-latest, node: 22 }
           - { os: windows-latest, node: 24 }
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -190,8 +172,11 @@ jobs:
           path: .report/
           if-no-files-found: ignore
 
+  # main and weekly: advisories can appear for code that didn't change. On pull requests,
+  # Dependency review checks what the change adds (npm audit would fail it for older problems).
   audit:
     name: npm audit
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -240,16 +225,10 @@ jobs:
           RESULT: ${{ steps.review.outcome }}
           VULNERABLE: ${{ steps.review.outputs.vulnerable-changes }}
           LICENSES: ${{ steps.review.outputs.invalid-license-changes }}
+          DENIED: ${{ steps.review.outputs.denied-changes }}
         run: |
           mkdir -p "$REPORT"
-          node -e '
-            const count = s => { try { return JSON.parse(s || "[]").length; } catch { return 0; } };
-            const v = count(process.env.VULNERABLE), l = count(process.env.LICENSES);
-            const text = process.env.RESULT === "success" && !v && !l
-              ? "No new dependencies with known vulnerabilities or disallowed licenses."
-              : `${v} vulnerable and ${l} license-problem dependency changes. See the job for details.`;
-            require("fs").writeFileSync(process.env.REPORT + "/dependency-review.md", text + "\n");
-          '
+          node scripts/ci/review-note.mjs | tee "$REPORT/dependency-review.md"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -257,8 +236,10 @@ jobs:
           path: .report/
           if-no-files-found: ignore
 
+  # main, weekly and on demand; Snyk's GitHub integration checks pull requests itself
   snyk:
     name: Snyk
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -275,7 +256,7 @@ jobs:
         id: when
         env:
           EVENT: ${{ github.event_name }}
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE: ${{ github.event.before }}
         run: |
           mkdir -p "$REPORT"
           if [ -z "$SNYK_TOKEN" ]; then reason="the repository has no SNYK_TOKEN secret";
@@ -391,9 +372,14 @@ jobs:
   report:
     name: PR report
     if: always() && github.event_name == 'pull_request'
-    needs: [lint, test, build, package, size, audit, dependency-review, snyk, bench, action]
+    needs: [lint, test, package, size, dependency-review, bench, action]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # to read the run's jobs, their annotations and their logs
+    permissions:
+      contents: read
+      actions: read
+      checks: read
     steps:
       - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
@@ -405,7 +391,7 @@ jobs:
         env:
           NEEDS: ${{ toJSON(needs) }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           mkdir -p pr-report
           node scripts/ci/pr-report.mjs .report > pr-report/comment.md

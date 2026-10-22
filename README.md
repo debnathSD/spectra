@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@progen-labs/spectra"><img alt="npm version" src="https://img.shields.io/npm/v/@progen-labs/spectra?style=flat-square&color=0a84ff&label=npm"></a>
-  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="tests" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Tests%20%28Node%2024%2C%20ubuntu-latest%29&style=flat-square&label=tests"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="tests" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Tests%20%28Node%2022%2C%20ubuntu-latest%29&style=flat-square&label=tests"></a>
   <a href="https://www.npmjs.com/package/@progen-labs/spectra"><img alt="Downloads" src="https://img.shields.io/npm/dm/@progen-labs/spectra?style=flat-square&color=0a84ff"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/npm/l/@progen-labs/spectra?style=flat-square&color=0a84ff"></a>
 </p>
@@ -363,7 +363,7 @@ and report generation work.
 ## Project health
 
 <p align="center">
-  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="tests" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Tests%20%28Node%2024%2C%20ubuntu-latest%29&style=flat-square&label=tests"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="tests" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Tests%20%28Node%2022%2C%20ubuntu-latest%29&style=flat-square&label=tests"></a>
   <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="lint" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Lint&style=flat-square&label=lint"></a>
   <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="npm audit" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=npm%20audit&style=flat-square&label=npm%20audit"></a>
   <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="snyk" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Snyk&style=flat-square&label=snyk"></a>
@@ -376,13 +376,13 @@ and report generation work.
 Every pull request and every push to `main` runs the same checks, and **spectra-bot** comments on each pull request
 with all of their results in one place, updated on every push:
 
-- **tests**: the test suite on Node 22, 24 and 26 (Linux) and Node 24 (macOS), and the VS Code extension's tests.
-  The packed npm package is also installed and run on Linux (Node 22, the oldest supported), macOS and Windows.
+- **tests**: the test suite on Node 22 and 26 (Linux, the oldest and newest supported) and Node 24 (macOS), and the
+  VS Code extension's tests. The packed npm package is also installed and run on Linux (Node 22) and Windows.
 - **lint**: ESLint, for undefined names, unused code and broken React hooks.
-- **npm audit**: the dependencies Spectra installs, plus GitHub's dependency review of new ones on pull requests;
-  weekly too, so new advisories show up.
-- **snyk**: [Snyk](https://snyk.io)'s test of the same dependencies whenever they change, with findings in the
-  [Security tab](https://github.com/progen-labs/spectra/security). Snyk also monitors `main`.
+- **npm audit**: the dependencies Spectra installs, on `main` and weekly, so new advisories show up. On pull
+  requests, GitHub's dependency review checks what the change adds.
+- **snyk**: [Snyk](https://snyk.io)'s test of the same dependencies on `main` when they change, and weekly, with
+  findings in the [Security tab](https://github.com/progen-labs/spectra/security). Snyk's own app checks pull requests.
 - **Socket**: [Socket](https://socket.dev)'s supply-chain score for the npm package; its GitHub app reviews every pull
   request that changes dependencies.
 - **size budget**: the npm package, the install with its dependencies and the dashboard bundle, against budgets,

@@ -1095,16 +1095,15 @@ every Monday (for new security advisories):
 | Job | What it checks |
 | --- | --- |
 | **Lint** | `npm run lint` (ESLint, `eslint.config.js`): undefined names, unused code, React hooks; no warnings allowed |
-| **Tests** | `npm test` on Node 22, 24 and 26 (Linux) and Node 24 (macOS); the VS Code extension's tests on one of them |
-| **Build** | the dashboard (`npm run build`) |
-| **Package** | `publint --strict`, then the packed package installed in a new project and run (`--version`, `--help`, `agents --print`, `reports`) on Linux with Node 22 (the oldest supported), macOS and Windows |
+| **Tests** | `npm test` on Node 22 and 26 (Linux: the oldest and newest supported) and Node 24 (macOS); the VS Code extension's tests on Linux |
+| **Package** | `publint --strict`, then the packed package installed in a new project and run (`--version`, `--help`, `agents --print`, `reports`) on Linux with Node 22 and on Windows. It also builds the dashboard, as does Size budget, so there is no separate build job |
 | **Size budget** | `scripts/size-report.mjs`: the npm package, the install with its dependencies, the number of packages and the dashboard bundle (`size-limit` in `package.json`), against budgets; on a pull request, compared with its base |
-| **npm audit** | the runtime dependencies; high or critical fail it |
+| **npm audit** | `main` and weekly: the runtime dependencies; high or critical fail it. Not on pull requests, where Dependency review checks what the change adds (npm audit would fail them for older problems) |
 | **Dependency review** | pull requests only: new dependencies with known vulnerabilities (high or critical fail it) or disallowed licenses |
-| **Snyk** | `snyk test` when a `package.json` changes, weekly and on demand (the free plan has a monthly budget); every severity goes to the Security tab, high or critical fail it (`scripts/snyk-summary.mjs`) |
+| **Snyk** | `main` when a `package.json` changes, weekly and on demand (the free plan has a monthly budget): `snyk test`, every severity to the Security tab, high or critical fail it (`scripts/snyk-summary.mjs`). Snyk's GitHub integration checks pull requests |
 | **Fix harness bench** | `bench/run.mjs`: `spectra fix` decides each scripted case correctly; a wrong decision is an annotation on the run |
 | **GitHub Action** | this repository's action on the demo app finds the planted slow component |
-| **PR report** | pull requests only: every job's result and notes, as one report (`scripts/ci/pr-report.mjs`) |
+| **PR report** | pull requests only: every job's result, linked to its job, and for each failure the failing step (linked to that line of the log), the files and lines it points at (lint problems, failing tests and where they were thrown, the bench) and the end of the log (`scripts/ci/pr-report.mjs`) |
 
 **`pr-comment.yml`** posts that report on the pull request as **spectra-bot**, as one comment updated on every push,
 with the checks other apps ran on the commit (CodeQL, Socket, Snyk's app). It runs as a `workflow_run`, from the
@@ -1135,7 +1134,9 @@ the workflows' actions. Socket's GitHub app follows `socket.yml`.
 3. **Socket**: install the [Socket GitHub app](https://github.com/apps/socket-security) on `progen-labs` and give it
    this repository.
 4. **Branch protection** for `main` (*Settings → Rules → Rulesets*): require pull requests, and require the checks
-   *Lint*, *Tests (Node 24, ubuntu-latest)*, *Build*, *Size budget*, *npm audit* and *PR report* to pass. Scorecard
+   *Lint*, *Tests (Node 22, ubuntu-latest)*, *Tests (Node 26, ubuntu-latest)*, *Tests (Node 24, macos-latest)*,
+   *Package (Node 22, ubuntu-latest)*, *Package (Node 24, windows-latest)*, *Size budget*, *Dependency review*,
+   *Fix harness bench*, *GitHub Action* and *Analyze (javascript-typescript)* to pass. Scorecard
    rewards it too.
 5. **Private vulnerability reporting** and **secret scanning with push protection**: turn both on under *Settings →
    Code security*.
