@@ -1,16 +1,29 @@
-# @progen-labs/spectra
+<h1 align="center">Spectra</h1>
 
-[![npm](https://img.shields.io/npm/v/@progen-labs/spectra?color=0a84ff&label=npm)](https://www.npmjs.com/package/@progen-labs/spectra)
-[![Tests](https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/ci.yml?branch=main&label=tests)](https://github.com/progen-labs/spectra/actions/workflows/ci.yml)
-[![Security](https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/security.yml?branch=main&label=security)](https://github.com/progen-labs/spectra/actions/workflows/security.yml)
-[![Size budget](https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/size.yml?branch=main&label=size%20budget)](https://github.com/progen-labs/spectra/actions/workflows/size.yml)
-[![Socket](https://socket.dev/api/badge/npm/package/@progen-labs/spectra)](https://socket.dev/npm/package/@progen-labs/spectra)
-[![Snyk](https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/snyk.yml?branch=main&label=snyk)](https://github.com/progen-labs/spectra/actions/workflows/snyk.yml)
-[![Unpacked size](https://img.shields.io/npm/unpacked-size/@progen-labs/spectra?label=unpacked%20size)](https://www.npmjs.com/package/@progen-labs/spectra?activeTab=code)
-[![Downloads](https://img.shields.io/npm/dm/@progen-labs/spectra)](https://www.npmjs.com/package/@progen-labs/spectra)
-[![License: MIT](https://img.shields.io/npm/l/@progen-labs/spectra)](LICENSE)
+<p align="center">
+  <b>Find out which file, which function and which component makes your frontend slow, automatically.</b>
+  <br>
+  <sub>React · Next.js · Vue · Angular · Svelte · any web frontend &nbsp;|&nbsp; CLI · dashboard · VS Code · AI agents · CI</sub>
+</p>
 
-**Find out which file, which function and which component makes your frontend slow — automatically.**
+<p align="center">
+  <a href="https://www.npmjs.com/package/@progen-labs/spectra"><img alt="npm version" src="https://img.shields.io/npm/v/@progen-labs/spectra?style=flat-square&color=0a84ff&label=npm"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/ci.yml?branch=main&style=flat-square&label=tests"></a>
+  <a href="https://www.npmjs.com/package/@progen-labs/spectra"><img alt="Downloads" src="https://img.shields.io/npm/dm/@progen-labs/spectra?style=flat-square&color=0a84ff"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/npm/l/@progen-labs/spectra?style=flat-square&color=0a84ff"></a>
+</p>
+
+<p align="center">
+  <a href="https://progen-labs.github.io/website/#spectra/docs/introduction"><b>Documentation</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://progen-labs.github.io/website/#spectra/demo"><b>2½-minute demo</b></a>
+  &nbsp;·&nbsp;
+  <a href="#install">Install</a>
+  &nbsp;·&nbsp;
+  <a href="https://marketplace.visualstudio.com/items?itemName=progen-labs.spectra-performance">VS Code</a>
+  &nbsp;·&nbsp;
+  <a href="#project-health">Project health</a>
+</p>
 
 Spectra is a CLI and dashboard that profiles a frontend build through the Chrome DevTools Protocol
 (tracing + CPU sampling) plus a small in-page probe for component re-renders and Web Vitals. Run one
@@ -25,11 +38,6 @@ functions. The framework is detected in the page itself, so it is right wherever
 Apps behind a login work too: Spectra [signs in first](#behind-a-login), with every kind of login. A
 [Progen Labs](https://github.com/progen-labs) project — independent, open source, no telemetry, no account
 required.
-
-**Watch the demo (2½ minutes):** [progen-labs.github.io/website/#spectra/demo](https://progen-labs.github.io/website/#spectra/demo).
-
-**Documentation:** the full guide, with annotated screenshots of every screen, is at
-[progen-labs.github.io/website](https://progen-labs.github.io/website/#spectra/docs/introduction).
 
 ## Install
 
@@ -353,16 +361,24 @@ and report generation work.
 
 ## Project health
 
-The badges at the top are live:
+<p align="center">
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/ci.yml"><img alt="tests" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/ci.yml?branch=main&style=flat-square&label=tests"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/security.yml"><img alt="npm audit" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/security.yml?branch=main&style=flat-square&label=npm%20audit"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/snyk.yml"><img alt="snyk" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/snyk.yml?branch=main&style=flat-square&label=snyk"></a>
+  <a href="https://socket.dev/npm/package/@progen-labs/spectra"><img alt="Socket" src="https://socket.dev/api/badge/npm/package/@progen-labs/spectra"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/size.yml"><img alt="size budget" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/size.yml?branch=main&style=flat-square&label=size%20budget"></a>
+  <a href="https://www.npmjs.com/package/@progen-labs/spectra?activeTab=code"><img alt="unpacked size" src="https://img.shields.io/npm/unpacked-size/@progen-labs/spectra?style=flat-square&label=unpacked&color=0a84ff"></a>
+</p>
 
-| Badge | What it checks |
-| --- | --- |
-| **tests** | The test suite, the AI fix harness's test bench and the GitHub Action, on every push and pull request |
-| **security** | `npm audit` on the dependencies Spectra installs, plus GitHub's dependency review on pull requests; weekly too, so new advisories show up |
-| **Socket** | [Socket](https://socket.dev)'s supply-chain score for the npm package. Its GitHub app reviews every pull request that changes dependencies |
-| **snyk** | [Snyk](https://snyk.io)'s test of the same dependencies, whenever they change and weekly, with findings in the repository's [Security tab](https://github.com/progen-labs/spectra/security). Snyk also monitors `main` and checks pull requests through its GitHub integration |
-| **size budget** | What Spectra costs to install, against budgets: the npm package, the install with its dependencies, and the dashboard bundle. Each run's summary has the numbers, and pull requests get a comment comparing them with `main` |
-| **unpacked size** | The npm package as published |
+- **tests**: the test suite, the AI fix harness's test bench and the GitHub Action, on every push and pull request.
+- **npm audit**: the dependencies Spectra installs, plus GitHub's dependency review on pull requests; weekly too, so
+  new advisories show up.
+- **snyk**: [Snyk](https://snyk.io)'s test of the same dependencies whenever they change, with findings in the
+  [Security tab](https://github.com/progen-labs/spectra/security). Snyk also monitors `main` and checks pull requests.
+- **Socket**: [Socket](https://socket.dev)'s supply-chain score for the npm package; its GitHub app reviews every pull
+  request that changes dependencies.
+- **size budget**: the npm package, the install with its dependencies and the dashboard bundle, against budgets. Each
+  run's summary has the numbers, and pull requests get a comparison with `main`.
 
 Report security issues privately: see [SECURITY.md](SECURITY.md).
 
