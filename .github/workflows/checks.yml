@@ -1,0 +1,416 @@
+name: Checks
+
+# Everything a change to Spectra must pass: on every pull request, on main
+# (where the results drive the README's badges), and weekly, so new security
+# advisories show up for unchanged code.
+#
+# Each job leaves a short Markdown note in .report/. On a pull request the
+# "PR report" job gathers them into one report, and spectra-bot posts it as a
+# single comment that is updated on every push (pr-comment.yml).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REPORT: ${{ github.workspace }}/.report
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - name: ESLint
+        run: |
+          mkdir -p "$REPORT"
+          if npx eslint . --max-warnings=0 > eslint.txt 2>&1; then
+            echo "ESLint: no problems." > "$REPORT/lint.md"
+          else
+            cat eslint.txt
+            { echo '```'; head -c 4000 eslint.txt; echo '```'; } > "$REPORT/lint.md"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-lint
+          path: .report/
+          if-no-files-found: ignore
+
+  test:
+    name: Tests (Node ${{ matrix.node }}, ${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, node: 22 }
+          - { os: ubuntu-latest, node: 24 }
+          - { os: ubuntu-latest, node: 26 }
+          - { os: macos-latest, node: 24 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm install --no-audit --no-fund
+      - name: npm test
+        shell: bash
+        run: |
+          mkdir -p "$REPORT"
+          set +e
+          npm test > test.txt 2>&1
+          code=$?
+          cat test.txt
+          node scripts/ci/test-note.mjs test.txt "Node ${{ matrix.node }}, ${{ matrix.os }}" > "$REPORT/test-${{ matrix.os }}-${{ matrix.node }}.md"
+          exit $code
+      - name: VS Code extension tests
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 24
+        run: npm --prefix vscode test
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-test-${{ matrix.os }}-${{ matrix.node }}
+          path: .report/
+          if-no-files-found: ignore
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - name: The dashboard
+        run: |
+          mkdir -p "$REPORT"
+          npm run build
+          echo "The dashboard builds: $(ls dist/assets | wc -l | tr -d ' ') files in dist/assets." > "$REPORT/build.md"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-build
+          path: .report/
+          if-no-files-found: ignore
+
+  package:
+    name: Package (Node ${{ matrix.node }}, ${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, node: 20 }
+          - { os: macos-latest, node: 24 }
+          - { os: windows-latest, node: 24 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm install --no-audit --no-fund
+      - name: package.json and the published files (publint)
+        if: matrix.os == 'ubuntu-latest'
+        run: npx publint --strict
+      - name: Install the packed package in a new project, and run it
+        run: |
+          mkdir -p "$REPORT"
+          npm pack --pack-destination "$RUNNER_TEMP" > /dev/null
+          app="$RUNNER_TEMP/app" && mkdir -p "$app" && cd "$app"
+          echo '{"name":"smoke","private":true}' > package.json
+          npm install --no-audit --no-fund "$RUNNER_TEMP"/progen-labs-spectra-*.tgz
+          version=$(npx spectra --version)
+          test "$version" = "$(node -p "require(require('path').join(process.env.GITHUB_WORKSPACE, 'package.json')).version")"
+          npx spectra --help > /dev/null
+          npx spectra agents --print | head -1 | grep -q Spectra
+          npx spectra reports > /dev/null
+          echo "Installs and runs on Node ${{ matrix.node }}, ${{ matrix.os }} (spectra $version)." > "$REPORT/package-${{ matrix.os }}.md"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-package-${{ matrix.os }}
+          path: .report/
+          if-no-files-found: ignore
+
+  size:
+    name: Size budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+      - name: The base branch, to compare with
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          git worktree add "$RUNNER_TEMP/base" "${{ github.event.pull_request.base.sha }}"
+          cd "$RUNNER_TEMP/base"
+          npm install --no-audit --no-fund
+          npm run build
+          node "$GITHUB_WORKSPACE/scripts/size-report.mjs" --root "$RUNNER_TEMP/base" --json "$RUNNER_TEMP/base-size.json"
+      - name: Sizes against their budgets
+        run: |
+          mkdir -p "$REPORT"
+          node scripts/size-report.mjs --compare "$RUNNER_TEMP/base-size.json" --markdown "$REPORT/size.md"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-size
+          path: .report/
+          if-no-files-found: ignore
+
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund --ignore-scripts
+      - name: The dependencies users install
+        run: |
+          mkdir -p "$REPORT"
+          npm audit --omit=dev --json > audit.json || true
+          node -e '
+            const a = require("./audit.json");
+            const v = a.metadata?.vulnerabilities || {};
+            const line = ["critical", "high", "moderate", "low"].map(s => `${s}: ${v[s] ?? 0}`).join(" · ");
+            const fs = require("fs");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### npm audit, runtime dependencies\n\n${line}\n`);
+            fs.writeFileSync(process.env.REPORT + "/audit.md", `Runtime dependencies: ${line}\n`);
+            console.log(line);
+          '
+          npm audit --omit=dev --audit-level=high
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-audit
+          path: .report/
+          if-no-files-found: ignore
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: New or changed dependencies
+        id: review
+        uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: never
+      - name: Note
+        if: always()
+        env:
+          RESULT: ${{ steps.review.outcome }}
+          VULNERABLE: ${{ steps.review.outputs.vulnerable-changes }}
+          LICENSES: ${{ steps.review.outputs.invalid-license-changes }}
+        run: |
+          mkdir -p "$REPORT"
+          node -e '
+            const count = s => { try { return JSON.parse(s || "[]").length; } catch { return 0; } };
+            const v = count(process.env.VULNERABLE), l = count(process.env.LICENSES);
+            const text = process.env.RESULT === "success" && !v && !l
+              ? "No new dependencies with known vulnerabilities or disallowed licenses."
+              : `${v} vulnerable and ${l} license-problem dependency changes. See the job for details.`;
+            require("fs").writeFileSync(process.env.REPORT + "/dependency-review.md", text + "\n");
+          '
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-dependency-review
+          path: .report/
+          if-no-files-found: ignore
+
+  snyk:
+    name: Snyk
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # Snyk's free plan has a monthly test budget: test when dependencies change, weekly and on demand
+      - name: Is a test needed?
+        id: when
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          mkdir -p "$REPORT"
+          if [ -z "$SNYK_TOKEN" ]; then reason="the repository has no SNYK_TOKEN secret";
+          elif [ "$EVENT" = schedule ] || [ "$EVENT" = workflow_dispatch ]; then reason="";
+          elif git diff --name-only "$BASE" HEAD 2>/dev/null | grep -qE '(^|/)package\.json$'; then reason="";
+          else reason="no dependency changes"; fi
+          if [ -n "$reason" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Not tested: $reason." | tee "$REPORT/snyk.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v7
+        if: steps.when.outputs.run == 'true'
+        with:
+          node-version: 24
+      - if: steps.when.outputs.run == 'true'
+        run: npm install --no-audit --no-fund --ignore-scripts
+      # every severity is reported (and shown in the Security tab); only high or critical fail the run
+      - name: Snyk test
+        id: test
+        if: steps.when.outputs.run == 'true'
+        continue-on-error: true
+        run: npx --yes snyk@latest test --sarif-file-output=snyk.sarif --json-file-output=snyk.json
+      - name: Results to the Security tab
+        if: steps.when.outputs.run == 'true' && hashFiles('snyk.sarif') != '' && github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: snyk.sarif
+          category: snyk
+      - name: Summary, failing on high or critical
+        if: steps.when.outputs.run == 'true' && hashFiles('snyk.json') != ''
+        run: node scripts/snyk-summary.mjs snyk.json --markdown "$REPORT/snyk.md"
+      - name: Snyk could not run
+        if: steps.when.outputs.run == 'true' && steps.test.outcome == 'failure' && hashFiles('snyk.json') == ''
+        run: |
+          echo "Snyk could not run: check the SNYK_TOKEN secret." > "$REPORT/snyk.md"
+          echo "::error title=Snyk could not run::Check the SNYK_TOKEN secret and the log of the Snyk test step."
+          exit 1
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-snyk
+          path: .report/
+          if-no-files-found: ignore
+
+  bench:
+    name: Fix harness bench
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PERF_CHROME_ARGS: --no-sandbox
+      SPECTRA_BENCH_MD: ${{ github.workspace }}/.report/bench.md
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - name: spectra fix decides every case correctly
+        run: |
+          mkdir -p "$REPORT"
+          node bench/run.mjs
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-bench
+          path: .report/
+          if-no-files-found: ignore
+
+  action:
+    name: GitHub Action
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: npm install --no-audit --no-fund
+      - name: Start the demo app
+        run: |
+          npm run demo > demo.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:5188/ > /dev/null && exit 0; sleep 1; done
+          cat demo.log; exit 1
+      - name: Spectra (this repository's action)
+        id: spectra
+        uses: ./
+        with:
+          url: http://localhost:5188/
+          cli: bin/spectra.js
+          runs: '2'
+          fail-on-budget: 'false'
+          artifact-name: spectra-demo-reports
+      - name: The deliberate problems are found
+        run: |
+          mkdir -p "$REPORT"
+          node -e '
+            const r = require(process.argv[1]);
+            const titles = r.findings.map(f => f.title);
+            console.log(r.summary);
+            if (!titles.some(t => /Row is slow to render/.test(t))) throw new Error("missing the Row finding: " + titles);
+            require("fs").writeFileSync(process.env.REPORT + "/action.md",
+              `Profiled the demo app: ${r.findings.length} findings, total blocking time ${Math.round(r.summary.tbtMs ?? 0)} ms; the planted slow component was found.\n`);
+          ' "${{ steps.spectra.outputs.result-file }}"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: report-action
+          path: .report/
+          if-no-files-found: ignore
+
+  report:
+    name: PR report
+    if: always() && github.event_name == 'pull_request'
+    needs: [lint, test, build, package, size, audit, dependency-review, snyk, bench, action]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: report-*
+          path: .report
+          merge-multiple: true
+      - name: Compose the report
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir -p pr-report
+          node scripts/ci/pr-report.mjs .report > pr-report/comment.md
+          cat pr-report/comment.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pr-report
+          path: pr-report/

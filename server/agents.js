@@ -5,8 +5,9 @@
  * instructions, so a user can just ask in plain words ("why is checkout
  * slow?", "did my change help?") and the agent runs the right Spectra command.
  *
- * Runs after `npm install @progen-labs/spectra` (server/postinstall.js) for the
- * agents this machine or project uses, and on demand with `spectra agents`.
+ * Written the first time Spectra runs in a project it is installed in (no
+ * install script, so package managers and supply-chain scanners have nothing
+ * to flag), refreshed when Spectra updates, and on demand with `spectra agents`.
  *
  * Files Spectra owns carry a `spectra:managed` marker and are replaced on
  * update; in shared files (AGENTS.md, CLAUDE.md, GEMINI.md) only the block
@@ -250,33 +251,84 @@ export function removeAgentDocs({ root, dryRun = false } = {}) {
   return out;
 }
 
+// what Spectra did in a project, so it acts once per version and never undoes a removal
+const noteFile = root => path.join(root, '.spectra', 'agent-docs.json');
+const readNote = root => {
+  try {
+    return JSON.parse(fs.readFileSync(noteFile(root), 'utf8'));
+  } catch {
+    return null;
+  }
+};
+export function writeNote(root, note) {
+  try {
+    fs.mkdirSync(path.dirname(noteFile(root)), { recursive: true });
+    fs.writeFileSync(noteFile(root), `${JSON.stringify({ ...note, at: new Date().toISOString() }, null, 2)}\n`);
+  } catch {}
+}
+
 /**
- * Should the install step write the docs? Only for a real project install:
- * not in CI, not a global install, not `npx` running Spectra from its cache,
- * not Spectra's own repository, and not when the user opted out.
+ * Should this run of `spectra` write the docs? Only in a project Spectra is
+ * installed in (its node_modules holds this copy of Spectra, and the command
+ * runs inside it): not under `npx` from its cache, not a global install, not
+ * Spectra's own repository, not in CI, and not when the user opted out or
+ * removed the docs. Once per Spectra version: the first run writes them for
+ * the agents in use; after an update, only what is already there is refreshed.
  */
-export function postinstallPlan({ env = process.env, pkgRoot = PKG_ROOT } = {}) {
-  const root = env.INIT_CWD && path.resolve(env.INIT_CWD);
+export function firstRunPlan({ cwd = process.cwd(), env = process.env, pkgRoot = PKG_ROOT } = {}) {
   if (env.SPECTRA_AGENT_DOCS === '0' || env.SPECTRA_AGENT_DOCS === 'false') return { skip: 'SPECTRA_AGENT_DOCS=0' };
   if (env.CI && env.CI !== 'false' && env.CI !== '0') return { skip: 'CI' };
-  if (env.npm_config_global === 'true') return { skip: 'a global install' };
-  if (!root) return { skip: 'no project directory (INIT_CWD)' };
-  const pkg = path.resolve(pkgRoot);
-  if (pkg === root) return { skip: "Spectra's own repository" };
-  // installed into this project's node_modules (pnpm keeps it under node_modules/.pnpm), not into npx's cache
   const real = (() => {
     try {
-      return fs.realpathSync(pkg);
+      return fs.realpathSync(pkgRoot);
     } catch {
-      return pkg;
+      return path.resolve(pkgRoot);
     }
   })();
-  const modules = path.join(root, 'node_modules') + path.sep;
-  if (!pkg.startsWith(modules) && !real.startsWith(modules)) return { skip: 'not installed into this project (npx or a parent folder)' };
+  const at = real.indexOf(`${path.sep}node_modules${path.sep}`);
+  if (at < 0) return { skip: "not installed from npm (Spectra's own repository)" };
+  const root = real.slice(0, at);
+  const here = (() => {
+    try {
+      return fs.realpathSync(cwd);
+    } catch {
+      return path.resolve(cwd);
+    }
+  })();
+  if (here !== root && !here.startsWith(root + path.sep)) return { skip: 'not run inside the project Spectra is installed in (npx or a global install)' };
   if (!exists(path.join(root, 'package.json'))) return { skip: 'no package.json' };
   const setting = readAgentDocsSetting(root);
   if (setting === false) return { skip: '"agentDocs": false in spectra.config.json' };
-  return { root, targets: Array.isArray(setting) ? setting.filter(id => TARGET_IDS.includes(id)) : undefined };
+  const note = readNote(root);
+  if (note?.removed) return { skip: 'removed with `spectra agents --remove`' };
+  if (note?.version === VERSION) return { skip: 'already done for this version' };
+  return { root, mode: note ? 'refresh' : 'install', targets: Array.isArray(setting) ? setting.filter(id => TARGET_IDS.includes(id)) : undefined };
+}
+
+/** Rewrites only the Spectra content that is already in the project (after an update). */
+export function refreshAgentDocs({ root, dryRun = false } = {}) {
+  const out = [];
+  for (const t of TARGETS) {
+    const files = [{ file: t.file, write: f => (t.block ? writeBlock(f, t.block(), dryRun) : writeOwn(f, t.content(), dryRun)) }];
+    if (t.also) files.push({ file: t.also.file, write: f => writeBlock(f, t.also.block(), dryRun) });
+    for (const { file: rel, write } of files) {
+      const file = path.join(root, rel);
+      if (!exists(file)) continue;
+      const text = fs.readFileSync(file, 'utf8');
+      if (!findBlock(text) && !text.includes(MANAGED)) continue;
+      out.push({ id: t.id, name: t.name, file: rel, result: write(file) });
+    }
+  }
+  return out;
+}
+
+/** The first-run step: does what firstRunPlan says, and remembers it. Returns the files it changed. */
+export function ensureAgentDocs(opts = {}) {
+  const plan = firstRunPlan(opts);
+  if (plan.skip) return { skip: plan.skip, changed: [] };
+  const results = plan.mode === 'install' ? installAgentDocs({ root: plan.root, targets: plan.targets }) : refreshAgentDocs({ root: plan.root });
+  writeNote(plan.root, { version: VERSION });
+  return { root: plan.root, changed: results.filter(r => r.result === 'created' || r.result === 'updated') };
 }
 
 /** One line per file, for people. */

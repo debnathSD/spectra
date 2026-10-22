@@ -5,11 +5,13 @@
  * package, the path that pulls it in and the fix. Exits 1 when any is high or
  * critical (the same bar as npm audit). Not shipped in the npm package.
  *
- *   node scripts/snyk-summary.mjs snyk.json
+ *   node scripts/snyk-summary.mjs snyk.json [--markdown <file>]
  */
 import fs from 'node:fs';
 
 const file = process.argv[2] || 'snyk.json';
+const mdAt = process.argv.indexOf('--markdown');
+const markdownFile = mdAt > 0 ? process.argv[mdAt + 1] : undefined;
 const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
 const results = Array.isArray(raw) ? raw : [raw];
 if (results.some(r => r.error)) {
@@ -45,4 +47,5 @@ if (serious.length) {
 const report = `${lines.join('\n')}\n`;
 console.log(report);
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${report}\n`);
+if (markdownFile) fs.writeFileSync(markdownFile, `${lines.slice(2).join('\n')}\n`);
 process.exitCode = serious.length ? 1 : 0;

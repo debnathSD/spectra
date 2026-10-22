@@ -16,8 +16,8 @@ The latest release on npm gets security fixes.
 
 - It drives a local Chrome to profile your app and keeps everything on your machine: no account, no telemetry,
   nothing uploaded. The dashboard listens on `127.0.0.1` only.
-- After `npm install`, an install step writes Spectra's knowledge doc for AI agents into your project's agent
-  instruction files (`AGENTS.md` and the like). It never runs in CI and sends nothing. Turn it off with
+- Spectra has no install script. The first time it runs in your project, it writes its knowledge doc for AI agents
+  into your project's agent instruction files (`AGENTS.md` and the like). It never does in CI, and sends nothing. Turn it off with
   `SPECTRA_AGENT_DOCS=0` or `"agentDocs": false` in `spectra.config.json`, and remove it with
   `npx spectra agents --remove`.
 - Passwords, tokens and cookies for signing in come from the dashboard or environment variables and stay in memory.

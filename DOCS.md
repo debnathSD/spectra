@@ -131,16 +131,19 @@ compare before and after a fix. **Delete** removes the selected one.
 
 ## AI agents know Spectra
 
-Installing Spectra writes its knowledge doc ([`agents/spectra.md`](agents/spectra.md): what it does, which command
+The first time Spectra runs in a project it is installed in, it writes its knowledge doc ([`agents/spectra.md`](agents/spectra.md): what it does, which command
 answers which request, how to read the results, how to prove a change helped, the rules) where AI coding agents read
 their project instructions: a block in `AGENTS.md` (Codex, GitHub Copilot's coding agent, Cursor, Windsurf, Zed and
 others), and for the agents the project or machine uses, `.claude/skills/spectra/SKILL.md` plus a note in `CLAUDE.md`,
 `.github/instructions/spectra.instructions.md` (GitHub Copilot), `.cursor/rules/spectra.mdc`,
-`.windsurf/rules/spectra.md`, `.clinerules/spectra.md`, `.roo/rules/spectra.md` and `GEMINI.md`. The install step
-(`server/postinstall.js`) runs only for a real project install: not in CI, for a global install, under `npx`, or with
-`SPECTRA_AGENT_DOCS=0` or `"agentDocs": false` in `spectra.config.json`. Shared files are only touched between
+`.windsurf/rules/spectra.md`, `.clinerules/spectra.md`, `.roo/rules/spectra.md` and `GEMINI.md`. There is no install
+script (so package managers and supply-chain scanners have nothing to flag): `bin/spectra.js` does it before the first
+`performance`, `compare`, `reports`, `dashboard` or `fix` in the project, once per Spectra version (a note in
+`.spectra/agent-docs.json` remembers it; after an update it only refreshes what is already there). Never in CI, under
+`npx` without an install, for a global install, after `spectra agents --remove`, or with `SPECTRA_AGENT_DOCS=0` or
+`"agentDocs": false` in `spectra.config.json`. Shared files are only touched between
 `<!-- spectra:start -->` and `<!-- spectra:end -->`; Spectra's own files carry a `spectra:managed` marker, and a file
-without it is never overwritten. `npx spectra agents` does it by hand (pnpm and Bun skip install steps until allowed),
+without it is never overwritten. `npx spectra agents` does it by hand,
 `--list` shows what was detected, and `--remove` takes it all out (`server/agents.js`).
 
 ## Signing in
@@ -546,7 +549,7 @@ engine is `action/run.mjs`, with the Markdown in `action/summary.mjs`.
    verdict is regressed or mixed (`fail-on-regression`, default off).
 
 On Linux runners Chrome runs with `--no-sandbox` (usual for headless Chrome in ephemeral CI) unless
-`chrome-sandbox: true`. `.github/workflows/ci.yml` runs the tests and then this action on the demo app (`uses: ./`).
+`chrome-sandbox: true`. `.github/workflows/checks.yml` runs this action on the demo app (`uses: ./`) on every change.
 `action/test-summary.js` covers the summary and the pass/fail decision. Release by moving the `v1` tag to the new
 commit.
 
@@ -1056,7 +1059,7 @@ action.yml, action/        the GitHub Action (run.mjs, summary.mjs, test-summary
 bench/                     the AI fix harness's test bench (npm run bench; not published to npm)
 video/                     the docs' demo videos, made with Remotion from a real VS Code recording and real MCP
                            output (own package.json; not published to npm; see video/README.md)
-.github/workflows/ci.yml   CI: tests, then the action on the demo app
+.github/workflows/         checks.yml (every check; spectra-bot's report), pr-comment.yml, codeql.yml, scorecard.yml
 .claude-plugin/            the plugin marketplace (marketplace.json)
 server/testing/            fixtures shared by the tests (synthetic reports, throwaway projects)
 docs/                      images used by the README
@@ -1086,37 +1089,56 @@ reports/  .spectra/        generated data (git-ignored)
 
 ## Project health checks (for maintainers)
 
-Three workflows keep the badges at the top of the README honest:
+**`checks.yml`** runs every check on each pull request, on every push to `main` (the README's badges show `main`) and
+every Monday (for new security advisories):
 
-| Workflow | Runs | What it checks | Where to look |
-| --- | --- | --- | --- |
-| `ci.yml` (**tests**) | push, pull request | `npm test`, the VS Code extension's tests, the fix harness's bench, the GitHub Action on the demo app | the Actions tab |
-| `security.yml` (**security**) | push, pull request, Mondays | `npm audit --omit=dev` (fails on high or critical), and GitHub's dependency review on pull requests | each run's summary |
-| `snyk.yml` (**snyk**) | dependency changes, Mondays, on demand | `snyk test` (high or critical fail it), kept to dependency changes so it stays inside the free plan's monthly tests | **Security → Code scanning**; snyk.io for the imported project, which Snyk monitors and checks pull requests for |
-| `size.yml` (**size budget**) | push, pull request | `scripts/size-report.mjs`: the npm package (packed, unpacked), the install with its dependencies and the number of packages, against budgets in the script; and the dashboard bundle, against the `size-limit` budgets in `package.json` | each run's summary; on pull requests, a comment from size-limit comparing the bundle with `main` |
+| Job | What it checks |
+| --- | --- |
+| **Lint** | `npm run lint` (ESLint, `eslint.config.js`): undefined names, unused code, React hooks; no warnings allowed |
+| **Tests** | `npm test` on Node 22, 24 and 26 (Linux) and Node 24 (macOS); the VS Code extension's tests on one of them |
+| **Build** | the dashboard (`npm run build`) |
+| **Package** | `publint --strict`, then the packed package installed in a new project and run (`--version`, `--help`, `agents --print`, `reports`) on Linux with Node 20, macOS and Windows |
+| **Size budget** | `scripts/size-report.mjs`: the npm package, the install with its dependencies, the number of packages and the dashboard bundle (`size-limit` in `package.json`), against budgets; on a pull request, compared with its base |
+| **npm audit** | the runtime dependencies; high or critical fail it |
+| **Dependency review** | pull requests only: new dependencies with known vulnerabilities (high or critical fail it) or disallowed licenses |
+| **Snyk** | `snyk test` when a `package.json` changes, weekly and on demand (the free plan has a monthly budget); every severity goes to the Security tab, high or critical fail it (`scripts/snyk-summary.mjs`) |
+| **Fix harness bench** | `bench/run.mjs`: `spectra fix` decides each scripted case correctly; a wrong decision is an annotation on the run |
+| **GitHub Action** | this repository's action on the demo app finds the planted slow component |
+| **PR report** | pull requests only: every job's result and notes, as one report (`scripts/ci/pr-report.mjs`) |
 
-Socket isn't a workflow: its GitHub app comments on pull requests that change dependencies and reports on `main`,
-following `socket.yml` (the demo apps in `fixtures/` and the video project are left out).
+**`pr-comment.yml`** posts that report on the pull request as **spectra-bot**, as one comment updated on every push,
+with the checks other apps ran on the commit (CodeQL, Socket, Snyk's app). It runs as a `workflow_run`, from the
+default branch's code, so it also works for pull requests from forks. **`codeql.yml`** is GitHub's code scanning,
+**`scorecard.yml`** the OpenSSF Scorecard, and **`.github/dependabot.yml`** opens weekly, grouped updates for npm and
+the workflows' actions. Socket's GitHub app follows `socket.yml`.
 
-`npm run size` gives the same size table locally. To change a budget, edit `BUDGET` in `scripts/size-report.mjs` or
-`size-limit` in `package.json`, and say why in the commit.
+`npm run lint` and `npm run size` run the same checks locally. To change a size budget, edit `BUDGET` in
+`scripts/size-report.mjs` or `size-limit` in `package.json`, and say why in the commit.
 
 **One-time setup** (each needs the repository owner's account):
 
-1. **Snyk**: sign in at [snyk.io](https://snyk.io) with GitHub (free for open source).
-   - Copy your token (*Account settings → Auth Token*) and add it as the repository secret `SNYK_TOKEN`
-     (*Settings → Secrets and variables → Actions*). Until then the Snyk workflow passes with a note that it skipped.
+1. **spectra-bot**: create a GitHub App named **spectra-bot** (*progen-labs → Settings → Developer settings → GitHub
+   Apps → New GitHub App*): any homepage URL (the repository's), webhook off, repository permissions *Pull requests:
+   Read and write*, *Issues: Read and write*, *Checks: Read-only*, installable *Only on this account*. Generate a
+   private key, install the app on `progen-labs/spectra`, then add the app's ID as the repository **variable**
+   `SPECTRA_BOT_APP_ID` and the private key (the whole `.pem` file) as the **secret** `SPECTRA_BOT_PRIVATE_KEY`.
+   Until then the comment comes from github-actions[bot].
+2. **Snyk**: sign in at [snyk.io](https://snyk.io) with GitHub (free for open source).
+   - Create a token (*Account settings → Personal Access Tokens*, with an expiry) and add it as the repository secret
+     `SNYK_TOKEN` (*Settings → Secrets and variables → Actions*). Without it the Snyk job notes that it skipped.
    - *Import GitHub Projects* → `progen-labs/spectra` (not the `debnathSD` mirror), with `fixtures, video` under
-     *Exclude folders*: the demo apps and the video project are never shipped. If `progen-labs` repositories don't
-     appear, grant Snyk access to the organization in GitHub (*Settings → Applications → Authorized OAuth Apps → Snyk*).
-   - In Snyk's GitHub integration settings: under *Pull request status checks*, tick *Only fail for high or critical
-     severity issues* (the same threshold as the workflow); under *PR comment experience*, untick *Create comments for
-     success cases*; leave *Automatic dependency upgrade PRs* off. A GitHub token there is only needed for Snyk's own
-     fix pull requests: if you want them, use a fine-grained token for this repository only.
-2. **Socket**: install the [Socket GitHub app](https://github.com/apps/socket-security) on the `progen-labs`
-   organization and give it this repository.
-3. **Private vulnerability reporting**: turn it on under *Settings → Code security*, so the link in `SECURITY.md`
-   works. Dependabot alerts can be turned on there too.
+     *Exclude folders*. If `progen-labs` repositories don't appear, grant Snyk access to the organization in GitHub
+     (*Settings → Applications → Authorized OAuth Apps → Snyk*).
+   - In Snyk's GitHub integration settings: tick *Only fail for high or critical severity issues*, untick *Create
+     comments for success cases* (spectra-bot reports already), and leave *Automatic dependency upgrade PRs* off
+     (Dependabot does that).
+3. **Socket**: install the [Socket GitHub app](https://github.com/apps/socket-security) on `progen-labs` and give it
+   this repository.
+4. **Branch protection** for `main` (*Settings → Rules → Rulesets*): require pull requests, and require the checks
+   *Lint*, *Tests (Node 24, ubuntu-latest)*, *Build*, *Size budget*, *npm audit* and *PR report* to pass. Scorecard
+   rewards it too.
+5. **Private vulnerability reporting** and **secret scanning with push protection**: turn both on under *Settings →
+   Code security*.
 
 ## Appearance and themes
 

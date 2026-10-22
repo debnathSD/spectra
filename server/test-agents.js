@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { TARGET_IDS, detectTargets, installAgentDocs, knowledge, postinstallPlan, removeAgentDocs } from './agents.js';
+import { TARGET_IDS, detectTargets, ensureAgentDocs, firstRunPlan, installAgentDocs, knowledge, removeAgentDocs, writeNote } from './agents.js';
 
 const tmp = () => fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'spectra-agents-')));
 const project = (files = {}) => {
@@ -83,23 +83,47 @@ test('the agents in use are detected from the project and the home folder', () =
   assert.deepEqual(detectTargets({ root, home }), ['agents-md', 'claude', 'cursor', 'copilot']);
 });
 
-test('the install step runs only for a real project install', () => {
+test('the first run in a project writes the docs; not in CI, under npx, or after an opt-out', () => {
   const root = project();
   const pkgRoot = path.join(root, 'node_modules', '@progen-labs', 'spectra');
   fs.mkdirSync(pkgRoot, { recursive: true });
-  const env = { INIT_CWD: root };
-  assert.deepEqual(postinstallPlan({ env, pkgRoot }), { root, targets: undefined });
-  assert.match(postinstallPlan({ env: { ...env, CI: 'true' }, pkgRoot }).skip, /CI/);
-  assert.match(postinstallPlan({ env: { ...env, SPECTRA_AGENT_DOCS: '0' }, pkgRoot }).skip, /SPECTRA_AGENT_DOCS/);
-  assert.match(postinstallPlan({ env: { ...env, npm_config_global: 'true' }, pkgRoot }).skip, /global/);
-  assert.match(postinstallPlan({ env: {}, pkgRoot }).skip, /INIT_CWD/);
-  // npx runs Spectra from its cache, not from the project
-  assert.match(postinstallPlan({ env, pkgRoot: path.join(tmp(), '_npx', 'node_modules', '@progen-labs', 'spectra') }).skip, /not installed into this project/);
-  // installing Spectra's own dependencies
-  assert.match(postinstallPlan({ env: { INIT_CWD: pkgRoot }, pkgRoot }).skip, /own repository/);
+  const env = {};
+  assert.deepEqual(firstRunPlan({ cwd: root, env, pkgRoot }), { root, mode: 'install', targets: undefined });
+  // from a folder inside the project too
+  fs.mkdirSync(path.join(root, 'src'));
+  assert.equal(firstRunPlan({ cwd: path.join(root, 'src'), env, pkgRoot }).root, root);
+  assert.match(firstRunPlan({ cwd: root, env: { CI: 'true' }, pkgRoot }).skip, /CI/);
+  assert.match(firstRunPlan({ cwd: root, env: { SPECTRA_AGENT_DOCS: '0' }, pkgRoot }).skip, /SPECTRA_AGENT_DOCS/);
+  // npx runs Spectra from its cache; a global install lives elsewhere too
+  assert.match(firstRunPlan({ cwd: root, env, pkgRoot: path.join(tmp(), '_npx', 'node_modules', '@progen-labs', 'spectra') }).skip, /not run inside/);
+  // Spectra's own repository
+  assert.match(firstRunPlan({ cwd: root, env, pkgRoot: tmp() }).skip, /own repository/);
   // the project can turn it off, or pick the agents
   fs.writeFileSync(path.join(root, 'spectra.config.json'), '{ "agentDocs": false }');
-  assert.match(postinstallPlan({ env, pkgRoot }).skip, /agentDocs/);
+  assert.match(firstRunPlan({ cwd: root, env, pkgRoot }).skip, /agentDocs/);
   fs.writeFileSync(path.join(root, 'spectra.config.json'), '{ "agentDocs": ["copilot", "nope"] }');
-  assert.deepEqual(postinstallPlan({ env, pkgRoot }).targets, ['copilot']);
+  assert.deepEqual(firstRunPlan({ cwd: root, env, pkgRoot }).targets, ['copilot']);
+});
+
+test('once per version: written once, refreshed after an update, never back after a removal', () => {
+  const root = project();
+  const pkgRoot = path.join(root, 'node_modules', '@progen-labs', 'spectra');
+  fs.mkdirSync(pkgRoot, { recursive: true });
+  fs.writeFileSync(path.join(root, 'spectra.config.json'), '{ "agentDocs": ["agents-md", "cursor"] }');
+  const run = () => ensureAgentDocs({ cwd: root, env: {}, pkgRoot });
+  assert.deepEqual(run().changed.map(r => r.file), ['AGENTS.md', '.cursor/rules/spectra.mdc']);
+  assert.match(run().skip, /already done/);
+  // an update rewrites only what is still there
+  fs.rmSync(path.join(root, '.cursor'), { recursive: true });
+  const agents = read(root, 'AGENTS.md');
+  fs.writeFileSync(path.join(root, 'AGENTS.md'), agents.replace('Spectra: frontend performance, measured', 'an older version'));
+  writeNote(root, { version: '0.0.1' });
+  assert.deepEqual(run().changed.map(r => r.file), ['AGENTS.md']);
+  assert.equal(has(root, '.cursor/rules/spectra.mdc'), false);
+  assert.equal(read(root, 'AGENTS.md'), agents);
+  // removed by the user: stays removed
+  removeAgentDocs({ root });
+  writeNote(root, { removed: true });
+  assert.match(run().skip, /removed/);
+  assert.equal(has(root, 'AGENTS.md'), false);
 });

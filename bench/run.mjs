@@ -115,6 +115,18 @@ if (!agentArg || agentArg === 'replay') {
   const passed = results.filter(r => r.ok).length;
   console.log(`\n${passed}/${results.length} cases decided correctly.`);
   fs.writeFileSync(path.join(BENCH, 'last-run.json'), `${JSON.stringify({ agent: 'replay', results }, null, 2)}\n`);
+  // in CI: each wrong decision as an annotation (readable without the log), and the table as Markdown
+  if (process.env.GITHUB_ACTIONS)
+    for (const r of results.filter(r => !r.ok)) console.log(`::error title=Bench case ${r.case}::expected ${r.expected}, got ${r.got}: ${(r.headline || r.reason || '').replace(/\n/g, ' ')}`);
+  const md = [
+    `${passed}/${results.length} cases decided correctly.`,
+    '',
+    '| Case | Expected | Got | |',
+    '| --- | --- | --- | --- |',
+    ...results.map(r => `| ${r.case} | ${r.expected} | ${r.got} | ${r.ok ? '✅' : '❌'} ${(r.headline || r.reason || '').replace(/\|/g, '\\|')} |`),
+  ].join('\n');
+  if (process.env.SPECTRA_BENCH_MD) fs.writeFileSync(process.env.SPECTRA_BENCH_MD, `${md}\n`);
+  if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Fix harness test bench\n\n${md}\n`);
   process.exit(passed === results.length ? 0 : 1);
 } else {
   const agent = agentArg === 'claude' ? undefined : agentArg;

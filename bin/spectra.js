@@ -293,6 +293,19 @@ function runDashboard() {
   });
 }
 
+// The first run in a project teaches its AI agents about Spectra (server/agents.js):
+// once per version, never in CI or under npx, and never back after a removal.
+if (['performance', 'perf', 'compare', 'reports', 'dashboard', 'ui', 'fix'].includes(command)) {
+  try {
+    const { ensureAgentDocs } = await import('../server/agents.js');
+    const { changed } = ensureAgentDocs();
+    if (changed.length)
+      console.error(`spectra: taught your AI agents about Spectra (${changed.map(r => r.file).join(', ')}). Undo: npx spectra agents --remove\n`);
+  } catch {
+    // never in the way of the command itself
+  }
+}
+
 switch (command) {
   case 'performance':
   case 'perf':

@@ -141,7 +141,7 @@
       }
     },
     "agentDocs": {
-      "description": "Spectra's knowledge doc for AI agents, written after npm install (see `spectra agents`). false: never write it; a list: only for these agents. Left out: AGENTS.md and the agents this project or machine uses.",
+      "description": "Spectra's knowledge doc for AI agents, written the first time Spectra runs in the project (see `spectra agents`). false: never write it; a list: only for these agents. Left out: AGENTS.md and the agents this project or machine uses.",
       "oneOf": [
         {
           "type": "boolean"

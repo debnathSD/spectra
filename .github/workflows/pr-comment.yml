@@ -1,0 +1,56 @@
+name: PR comment
+
+# Posts the Checks workflow's report on its pull request as spectra-bot, and
+# keeps that one comment up to date. It runs after Checks (and CodeQL, whose
+# result it adds), as a workflow_run, so it can comment on pull requests from
+# forks too, without running any of their code: the report is only text.
+#
+# spectra-bot is a GitHub App: set the repository variable SPECTRA_BOT_APP_ID
+# and the secret SPECTRA_BOT_PRIVATE_KEY (DOCS.md, Project health). Without
+# them the comment comes from github-actions[bot].
+
+on:
+  workflow_run:
+    workflows: [Checks, CodeQL]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+  issues: write
+  checks: read
+
+jobs:
+  comment:
+    name: Comment on the pull request
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # the default branch's scripts, never the pull request's
+      - uses: actions/checkout@v7
+      - name: The report from Checks
+        if: github.event.workflow_run.name == 'Checks'
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-report
+          path: pr-report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: spectra-bot's token
+        id: bot
+        if: vars.SPECTRA_BOT_APP_ID != ''
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.SPECTRA_BOT_APP_ID }}
+          private-key: ${{ secrets.SPECTRA_BOT_PRIVATE_KEY }}
+      - name: Post or update the comment
+        env:
+          GH_TOKEN: ${{ steps.bot.outputs.token || secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: node scripts/ci/pr-comment.mjs pr-report/comment.md

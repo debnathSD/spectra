@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@progen-labs/spectra"><img alt="npm version" src="https://img.shields.io/npm/v/@progen-labs/spectra?style=flat-square&color=0a84ff&label=npm"></a>
-  <a href="https://github.com/progen-labs/spectra/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/ci.yml?branch=main&style=flat-square&label=tests"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="tests" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Tests%20%28Node%2024%2C%20ubuntu-latest%29&style=flat-square&label=tests"></a>
   <a href="https://www.npmjs.com/package/@progen-labs/spectra"><img alt="Downloads" src="https://img.shields.io/npm/dm/@progen-labs/spectra?style=flat-square&color=0a84ff"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/npm/l/@progen-labs/spectra?style=flat-square&color=0a84ff"></a>
 </p>
@@ -242,9 +242,9 @@ changes bump it. Saved reports carry their own `schemaVersion` too.
 
 ## Use it from your AI assistant
 
-**Your agent already knows Spectra.** Installing it writes Spectra's knowledge doc (what it does, which command
-answers which request, how to read the results, how to prove a change helped) where your AI coding agent reads its
-project instructions. So you can ask in plain words, *"why is checkout slow?"*, *"did my change make it faster?"*,
+**Your agent already knows Spectra.** The first time Spectra runs in your project, it writes its knowledge doc (what
+it does, which command answers which request, how to read the results, how to prove a change helped) where your AI
+coding agent reads its project instructions. So you can ask in plain words, *"why is checkout slow?"*, *"did my change make it faster?"*,
 and the agent runs Spectra for you:
 
 | Agent | File |
@@ -255,8 +255,9 @@ and the agent runs Spectra for you:
 | Cursor · Windsurf · Cline · Roo Code · Gemini CLI | `.cursor/rules/spectra.mdc` · `.windsurf/rules/spectra.md` · `.clinerules/spectra.md` · `.roo/rules/spectra.md` · `GEMINI.md` |
 
 Beyond `AGENTS.md`, it writes for the agents your project or machine uses, only between its own markers, so your
-own text is never touched. pnpm and Bun skip install steps until you allow them; run `npx spectra agents` instead
-(`--all`, `--only claude,copilot`, `--list`, `--print`). `npx spectra agents --remove` takes it all out, and
+own text is never touched. There is no install script: it happens on the first `spectra` command (never in CI or
+under `npx` without an install), and `npx spectra agents` does it any time (`--all`, `--only claude,copilot`,
+`--list`, `--print`). `npx spectra agents --remove` takes it all out, and
 `"agentDocs": false` in `spectra.config.json` (or `SPECTRA_AGENT_DOCS=0`) keeps it off. See
 [Any AI agent](https://progen-labs.github.io/website/#spectra/docs/agents).
 
@@ -362,23 +363,32 @@ and report generation work.
 ## Project health
 
 <p align="center">
-  <a href="https://github.com/progen-labs/spectra/actions/workflows/ci.yml"><img alt="tests" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/ci.yml?branch=main&style=flat-square&label=tests"></a>
-  <a href="https://github.com/progen-labs/spectra/actions/workflows/security.yml"><img alt="npm audit" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/security.yml?branch=main&style=flat-square&label=npm%20audit"></a>
-  <a href="https://github.com/progen-labs/spectra/actions/workflows/snyk.yml"><img alt="snyk" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/snyk.yml?branch=main&style=flat-square&label=snyk"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="tests" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Tests%20%28Node%2024%2C%20ubuntu-latest%29&style=flat-square&label=tests"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="lint" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Lint&style=flat-square&label=lint"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="npm audit" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=npm%20audit&style=flat-square&label=npm%20audit"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="snyk" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Snyk&style=flat-square&label=snyk"></a>
   <a href="https://socket.dev/npm/package/@progen-labs/spectra"><img alt="Socket" src="https://socket.dev/api/badge/npm/package/@progen-labs/spectra"></a>
-  <a href="https://github.com/progen-labs/spectra/actions/workflows/size.yml"><img alt="size budget" src="https://img.shields.io/github/actions/workflow/status/progen-labs/spectra/size.yml?branch=main&style=flat-square&label=size%20budget"></a>
+  <a href="https://github.com/progen-labs/spectra/actions/workflows/checks.yml"><img alt="size budget" src="https://img.shields.io/github/check-runs/progen-labs/spectra/main?nameFilter=Size%20budget&style=flat-square&label=size%20budget"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/progen-labs/spectra"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/progen-labs/spectra/badge?style=flat-square"></a>
   <a href="https://www.npmjs.com/package/@progen-labs/spectra?activeTab=code"><img alt="unpacked size" src="https://img.shields.io/npm/unpacked-size/@progen-labs/spectra?style=flat-square&label=unpacked&color=0a84ff"></a>
 </p>
 
-- **tests**: the test suite, the AI fix harness's test bench and the GitHub Action, on every push and pull request.
-- **npm audit**: the dependencies Spectra installs, plus GitHub's dependency review on pull requests; weekly too, so
-  new advisories show up.
+Every pull request and every push to `main` runs the same checks, and **spectra-bot** comments on each pull request
+with all of their results in one place, updated on every push:
+
+- **tests**: the test suite on Node 22, 24 and 26 (Linux) and Node 24 (macOS), and the VS Code extension's tests.
+  The packed npm package is also installed and run on Linux (Node 20), macOS and Windows.
+- **lint**: ESLint, for undefined names, unused code and broken React hooks.
+- **npm audit**: the dependencies Spectra installs, plus GitHub's dependency review of new ones on pull requests;
+  weekly too, so new advisories show up.
 - **snyk**: [Snyk](https://snyk.io)'s test of the same dependencies whenever they change, with findings in the
-  [Security tab](https://github.com/progen-labs/spectra/security). Snyk also monitors `main` and checks pull requests.
+  [Security tab](https://github.com/progen-labs/spectra/security). Snyk also monitors `main`.
 - **Socket**: [Socket](https://socket.dev)'s supply-chain score for the npm package; its GitHub app reviews every pull
   request that changes dependencies.
-- **size budget**: the npm package, the install with its dependencies and the dashboard bundle, against budgets. Each
-  run's summary has the numbers, and pull requests get a comparison with `main`.
+- **size budget**: the npm package, the install with its dependencies and the dashboard bundle, against budgets,
+  compared with `main` on pull requests.
+- **OpenSSF Scorecard**: how well the repository follows open-source security practices.
+- Also on every change: the AI fix harness's test bench, the GitHub Action on the demo app, and CodeQL code scanning.
 
 Report security issues privately: see [SECURITY.md](SECURITY.md).
 

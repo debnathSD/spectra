@@ -10,9 +10,10 @@
  *   spectra agents --print         print the knowledge doc
  *   … --dir <project>  --dry-run
  */
+import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from './args.js';
-import { TARGETS, TARGET_IDS, describe, detectTargets, installAgentDocs, knowledge, removeAgentDocs } from './agents.js';
+import { TARGETS, TARGET_IDS, describe, detectTargets, installAgentDocs, knowledge, removeAgentDocs, writeNote } from './agents.js';
 
 const { opt, flag } = parseArgs(process.argv.slice(2), { values: ['dir', 'only'] });
 const root = path.resolve(opt('dir', process.cwd()));
@@ -25,7 +26,7 @@ Teaches your AI agents about Spectra: what it does, which command answers which
 request, and how to read the results. It writes Spectra's knowledge doc where
 each agent reads its project instructions, so you can ask in plain words
 ("why is checkout slow?", "did my change help?") and the agent runs Spectra.
-It runs by itself after npm install; this does it by hand.
+It happens by itself the first time Spectra runs in a project; this does it by hand.
 
 Agents: ${TARGET_IDS.join(', ')}
 Off for a project: "agentDocs": false in spectra.config.json (or SPECTRA_AGENT_DOCS=0).`);
@@ -46,6 +47,8 @@ if (flag('list')) {
 
 if (flag('remove')) {
   const results = removeAgentDocs({ root, dryRun });
+  // and don't bring them back on the next run
+  if (!dryRun) writeNote(root, { removed: true });
   console.log(results.length ? `${dryRun ? 'Would remove' : 'Removed'} Spectra's knowledge doc:\n${describe(results)}` : 'Nothing to remove.');
   process.exit(0);
 }
@@ -61,6 +64,7 @@ else if (opt('only')) {
   }
 }
 const results = installAgentDocs({ root, targets, dryRun });
+if (!dryRun) writeNote(root, { version: JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version });
 console.log(`${dryRun ? 'Would write' : 'Wrote'} Spectra's knowledge doc for your AI agents:\n${describe(results)}`);
 console.log('\nAsk your agent in plain words, e.g. "why is the checkout page slow?" or "did my last change make it faster?".');
 console.log('Remove it with: npx spectra agents --remove');
