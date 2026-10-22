@@ -139,6 +139,30 @@
           "description": "How long to wait for a manual sign-in (default 300)"
         }
       }
+    },
+    "agentDocs": {
+      "description": "Spectra's knowledge doc for AI agents, written after npm install (see `spectra agents`). false: never write it; a list: only for these agents. Left out: AGENTS.md and the agents this project or machine uses.",
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "array",
+          "items": {
+            "enum": [
+              "agents-md",
+              "claude",
+              "cursor",
+              "copilot",
+              "windsurf",
+              "cline",
+              "roo",
+              "gemini"
+            ]
+          },
+          "uniqueItems": true
+        }
+      ]
     }
   }
 }

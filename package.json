@@ -1,6 +1,6 @@
 {
   "name": "@progen-labs/spectra",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Spectra — a Chrome DevTools Protocol profiler that identifies the files, functions and components causing frontend slowness, across React, Vue, Svelte, Angular and Next.js builds.",
   "type": "module",
   "bin": {
@@ -18,6 +18,7 @@
     "server",
     "shared",
     "schema",
+    "agents",
     "src",
     "dist",
     "index.html",
@@ -34,7 +35,8 @@
     "profile": "node server/cli.js",
     "test": "node --test \"server/**/test-*.js\" \"action/test-*.js\"",
     "test:vscode": "npm --prefix vscode test",
-    "bench": "node bench/run.mjs"
+    "bench": "node bench/run.mjs",
+    "postinstall": "node server/postinstall.js"
   },
   "engines": {
     "node": ">=18"

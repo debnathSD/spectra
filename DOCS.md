@@ -27,6 +27,7 @@ installed package, use `npx spectra dashboard` wherever it says `npm run dev`. E
 - [One-time setup](#one-time-setup)
 - [Every time you profile](#every-time-you-profile)
 - [Your first recording](#your-first-recording)
+- [AI agents know Spectra](#ai-agents-know-spectra)
 - [Signing in](#signing-in)
 - [Appearance and themes](#appearance-and-themes)
 - [Reading the report](#reading-the-report)
@@ -127,6 +128,20 @@ Open <http://localhost:5178> in any browser. That page is the *control panel*; t
 
 Every report is saved in `reports/` (git-ignored) and can be reopened from the drop-down at the top right, so you can
 compare before and after a fix. **Delete** removes the selected one.
+
+## AI agents know Spectra
+
+Installing Spectra writes its knowledge doc ([`agents/spectra.md`](agents/spectra.md): what it does, which command
+answers which request, how to read the results, how to prove a change helped, the rules) where AI coding agents read
+their project instructions: a block in `AGENTS.md` (Codex, GitHub Copilot's coding agent, Cursor, Windsurf, Zed and
+others), and for the agents the project or machine uses, `.claude/skills/spectra/SKILL.md` plus a note in `CLAUDE.md`,
+`.github/instructions/spectra.instructions.md` (GitHub Copilot), `.cursor/rules/spectra.mdc`,
+`.windsurf/rules/spectra.md`, `.clinerules/spectra.md`, `.roo/rules/spectra.md` and `GEMINI.md`. The install step
+(`server/postinstall.js`) runs only for a real project install: not in CI, for a global install, under `npx`, or with
+`SPECTRA_AGENT_DOCS=0` or `"agentDocs": false` in `spectra.config.json`. Shared files are only touched between
+`<!-- spectra:start -->` and `<!-- spectra:end -->`; Spectra's own files carry a `spectra:managed` marker, and a file
+without it is never overwritten. `npx spectra agents` does it by hand (pnpm and Bun skip install steps until allowed),
+`--list` shows what was detected, and `--remove` takes it all out (`server/agents.js`).
 
 ## Signing in
 
@@ -1009,6 +1024,7 @@ bin/spectra.js             the CLI: performance, compare, reports, dashboard
 server/probe.browser.js    in-page probe (React / Vue / Angular hooks + vitals + component screen positions), injected before the app loads
 server/chrome.js           find / launch / attach Chrome
 server/recorder.js         CDP orchestration: start/stop, trace stream, metrics, sign-in, component locations
+server/agents.js           the knowledge doc for AI agents: where each agent reads it, install and remove
 server/signin.js           signing in: login forms (frames, shadow DOM, two steps, TOTP codes), prompts, tokens, links
 server/git.js              commit / author lookup (name only, never the email)
 server/pdf/                comparison PDF: print-ready HTML (template.js) + headless-Chrome printing (render.js)

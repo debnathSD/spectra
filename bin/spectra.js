@@ -8,6 +8,7 @@
  *   spectra mcp [--project <dir>]                            MCP server for AI tools (stdio)
  *   spectra fix [options]                                    the AI fix harness: fix, check, verify
  *   spectra dashboard                                        open the dashboard UI
+ *   spectra agents [--remove]                                teach AI agents about Spectra
  *   spectra --help                                           show this help
  *   spectra --version                                        print the version
  *
@@ -50,6 +51,9 @@ Usage:
                                   only if your checks pass and it measures faster
                                   (spectra fix --help for its options)
   spectra dashboard               Open the Spectra dashboard UI
+  spectra agents [--remove]       Teach your AI agents (Claude Code, Copilot, Cursor,
+                                  Codex, Windsurf, …) what Spectra does, so you can
+                                  ask them in plain words (spectra agents --help)
   spectra --help, -h              Show this help
   spectra --version, -v           Print the version
 
@@ -330,6 +334,13 @@ switch (command) {
   case 'dashboard':
   case 'ui':
     runDashboard();
+    break;
+  case 'agents':
+    // in-process: it writes into the user's project (the current directory)
+    import('../server/agents-cli.js').catch(err => {
+      console.error(`spectra: ${err.message}`);
+      process.exit(1);
+    });
     break;
   case '--version':
   case '-v':

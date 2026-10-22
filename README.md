@@ -76,6 +76,8 @@ spectra compare <before> <after>         Did it get faster? Noise-aware before/a
 spectra reports                          List saved reports
 spectra mcp [--project <dir>]            MCP server for AI tools (stdio)
 spectra dashboard [--port N] [--open]    Open the dashboard UI
+spectra fix [options]                    The AI fix harness (spectra fix --help)
+spectra agents [--remove]                Teach your AI agents what Spectra does
 spectra --help                           Full option list
 spectra --version
 ```
@@ -221,6 +223,24 @@ shipped with the package (`schema/result.schema.json`); additive changes keep `s
 changes bump it. Saved reports carry their own `schemaVersion` too.
 
 ## Use it from your AI assistant
+
+**Your agent already knows Spectra.** Installing it writes Spectra's knowledge doc (what it does, which command
+answers which request, how to read the results, how to prove a change helped) where your AI coding agent reads its
+project instructions. So you can ask in plain words, *"why is checkout slow?"*, *"did my change make it faster?"*,
+and the agent runs Spectra for you:
+
+| Agent | File |
+| --- | --- |
+| Codex, GitHub Copilot's coding agent, Cursor, Windsurf, Zed, Jules, Amp and any other agent that reads `AGENTS.md` | a Spectra block in `AGENTS.md` (always) |
+| Claude Code | `.claude/skills/spectra/SKILL.md`, and a short note in `CLAUDE.md` |
+| GitHub Copilot (VS Code, Visual Studio, JetBrains) | `.github/instructions/spectra.instructions.md` |
+| Cursor · Windsurf · Cline · Roo Code · Gemini CLI | `.cursor/rules/spectra.mdc` · `.windsurf/rules/spectra.md` · `.clinerules/spectra.md` · `.roo/rules/spectra.md` · `GEMINI.md` |
+
+Beyond `AGENTS.md`, it writes for the agents your project or machine uses, only between its own markers, so your
+own text is never touched. pnpm and Bun skip install steps until you allow them; run `npx spectra agents` instead
+(`--all`, `--only claude,copilot`, `--list`, `--print`). `npx spectra agents --remove` takes it all out, and
+`"agentDocs": false` in `spectra.config.json` (or `SPECTRA_AGENT_DOCS=0`) keeps it off. See
+[Any AI agent](https://progen-labs.github.io/website/#spectra/docs/agents).
 
 Spectra is an [MCP](https://modelcontextprotocol.io) server too, so an AI coding assistant can profile a page,
 fix what it finds, and prove each fix with before/after measurements.
