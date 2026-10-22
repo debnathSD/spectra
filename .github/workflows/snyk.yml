@@ -43,17 +43,23 @@ jobs:
           node-version: 22
       - if: env.SNYK_TOKEN != ''
         run: npm install --no-audit --no-fund --ignore-scripts
+      # every severity is reported (and shown in the Security tab); only high or critical fail the run
       - name: Snyk test
         id: test
         if: env.SNYK_TOKEN != ''
         continue-on-error: true
-        run: npx --yes snyk@latest test --severity-threshold=high --sarif-file-output=snyk.sarif
+        run: npx --yes snyk@latest test --sarif-file-output=snyk.sarif --json-file-output=snyk.json
       - name: Results to the Security tab
         if: env.SNYK_TOKEN != '' && hashFiles('snyk.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: snyk.sarif
           category: snyk
-      - name: High or critical vulnerabilities found
-        if: steps.test.outcome == 'failure'
-        run: exit 1
+      - name: Summary, failing on high or critical
+        if: env.SNYK_TOKEN != '' && hashFiles('snyk.json') != ''
+        run: node scripts/snyk-summary.mjs snyk.json
+      - name: Snyk could not run
+        if: env.SNYK_TOKEN != '' && steps.test.outcome == 'failure' && hashFiles('snyk.json') == ''
+        run: |
+          echo "::error title=Snyk could not run::Check the SNYK_TOKEN secret and the log of the Snyk test step."
+          exit 1
