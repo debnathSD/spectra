@@ -127,6 +127,7 @@ describe('signing in, in Chrome', { skip: !chrome && 'Chrome was not found (set 
     assert.equal(JSON.stringify(r.status).includes(DEMO.password), false, 'the status never carries the password');
   });
   test('two steps: the username, Next, then the password', async () => signedIn(await signIn('/app', { ...creds, url: `${demo.url}/two-step` })));
+  test('a page that swallows the first click: Enter sends the form', async () => signedIn(await signIn('/app', { ...creds, url: `${demo.url}/busy` })));
   test('a single-page app whose form renders late', async () => signedIn(await signIn('/app', { ...creds, url: `${demo.url}/spa` })));
   test('a login form inside an iframe', async () => signedIn(await signIn('/app', { ...creds, url: `${demo.url}/iframe` })));
   test("a login form inside a web component's shadow DOM", async () => signedIn(await signIn('/app', { ...creds, url: `${demo.url}/shadow` })));

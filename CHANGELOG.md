@@ -8,6 +8,7 @@ Update an existing install with `npm install --save-dev @progen-labs/spectra@lat
 
 - **Node.js 22.12 or newer.** Spectra's Chrome driver, puppeteer-core, needs it, so `engines` in `package.json` now says so instead of Node 18, and every release is installed and run on it in CI. Node 20 reached its end of life in April 2026.
 - **No install script.** Spectra's knowledge doc for AI agents is now written the first time Spectra runs in your project, instead of during `npm install`, so package managers and supply-chain scanners such as Socket have no install script to flag. It works the same with npm, pnpm, Yarn and Bun, once per version, and never comes back after `npx spectra agents --remove`. See [Any AI agent](https://progen-labs.github.io/website/#spectra/docs/agents).
+- **A sign-in click that goes nowhere is retried.** On a busy page or a slow machine, the click on the sign-in button can be lost. When the form sent nothing at all, Spectra now presses Enter in the last field once, and if the form still sent nothing, the error says so and asks for the button's selector. See [Signing in](https://progen-labs.github.io/website/#spectra/docs/signing-in).
 
 ## 0.6.0 (22 October 2026)
 

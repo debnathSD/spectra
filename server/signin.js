@@ -479,16 +479,37 @@ export async function signInWithForm(page, signIn, { timeoutMs = 30_000 } = {}) 
     }
   }
   if (s.password && c.password) await fill(page, c.password, s.password);
-  await submit(page, c, c.password || c.username);
+  // what the page sends once the form is submitted: nothing at all means the click never reached it
+  let sent = 0;
+  const onRequest = req => {
+    if (['document', 'xhr', 'fetch'].includes(req.resourceType())) sent++;
+  };
+  page.on('request', onRequest);
+  try {
+    return await afterSubmit(page, s, c, { rejectedBefore, timeoutMs, sent: () => sent });
+  } finally {
+    page.off('request', onRequest);
+  }
+}
 
-  // the form leaves, or asks for an authenticator code first
+// After the details are sent: the form leaves, asks for an authenticator code, or says they were wrong.
+async function afterSubmit(page, s, c, { rejectedBefore, timeoutMs, sent }) {
+  const last = c.password || c.username;
+  await submit(page, c, last);
+
   const end = Date.now() + timeoutMs;
   const submittedAt = Date.now();
   let answeredCode = false;
+  let resent = false;
   while (Date.now() < end) {
     // the app answered "wrong password": no need to wait out the timeout
     if (Date.now() - submittedAt > 1000 && !rejectedBefore && (await hasLoginForm(page)) && (await saysRejected(page)))
       throw new Error(`The login on ${where(page)} did not accept the username and password. Check them.`);
+    // a busy page can swallow the click: when nothing was sent at all, press Enter in the last field once
+    if (!resent && !answeredCode && !sent() && Date.now() - submittedAt > 3000 && (await hasLoginForm(page))) {
+      resent = true;
+      await last?.press('Enter').catch(() => {});
+    }
     if (!(await hasLoginForm(page))) {
       const after = await findControls(page, s).catch(() => null);
       if (after?.code && !answeredCode) {
@@ -516,6 +537,8 @@ export async function signInWithForm(page, signIn, { timeoutMs = 30_000 } = {}) 
   if (await hasLoginForm(page)) {
     const now = await findControls(page, s).catch(() => null);
     if (now?.captcha) throw captchaError(page);
+    if (!sent())
+      throw new Error(`Spectra filled in the login form on ${where(page)}, but submitting it sent nothing, and it is still showing after ${Math.round(timeoutMs / 1000)} s. Give the sign-in button's selector (submitSelector, or --login-submit).`);
     throw new Error(`Spectra filled in the login form on ${where(page)}, but it is still showing after ${Math.round(timeoutMs / 1000)} s. Check the username and password, or give the field selectors.`);
   }
   // let the app finish what follows a login (redirects, first data loads)

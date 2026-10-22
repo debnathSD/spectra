@@ -5,7 +5,6 @@
 max_retries = 3
 timeout = 30
 accept = ["200..=206", "429"]
-include_fragments = false
 
 exclude = [
   # local pages in examples

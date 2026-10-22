@@ -20,6 +20,7 @@ Test credentials, for this fixture only:
 | --- | --- |
 | `/login` | A classic form |
 | `/two-step` | The username, then Next, then the password |
+| `/busy` | A classic form whose button ignores the first click, as a slow machine can; Spectra presses Enter when nothing was sent |
 | `/spa` | A single-page app's form, rendered late, whose fields only change through input events |
 | `/iframe` | The form in an iframe |
 | `/shadow` | The form inside a web component's shadow DOM |

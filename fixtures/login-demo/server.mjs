@@ -103,6 +103,14 @@ export function createLoginDemo() {
       return credsOk(b) ? redirect(res, '/app', { 'set-cookie': startSession() }) : send(res, 401, page('Sign in', '<p>Wrong password.</p><a href="/two-step">Try again</a>'));
     }
 
+    // 2b. a busy page that swallows the first click on its button, as a slow machine can
+    if (p === '/busy')
+      return send(
+        res,
+        200,
+        page('Sign in', `<h1>Sign in</h1>${formHtml('/login?next=/app')}<script>document.querySelector('button').addEventListener('click', e => e.preventDefault(), { once: true });</script>`),
+      );
+
     // 3. a single-page app: the form appears late and its fields only change through input events
     if (p === '/spa')
       return send(res, 200, page('App', `<div id="root">Loading…</div><script>
