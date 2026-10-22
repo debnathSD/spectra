@@ -7,13 +7,13 @@
  * the jobs' notes (sizes, tests, the bench) follow, folded. Prints Markdown;
  * pr-comment.mjs posts it.
  *
- *   NEEDS='{…}' HEAD_SHA=… GITHUB_TOKEN=… GITHUB_REPOSITORY=… GITHUB_RUN_ID=… node scripts/ci/pr-report.mjs .report
+ *   NEEDS='{…}' HEAD_SHA=… GITHUB_TOKEN=… GITHUB_REPOSITORY=… GITHUB_RUN_ID=… node scripts/ci/pr-report.mjs ci-notes
  */
 import fs from 'node:fs';
 import path from 'node:path';
 
 export const MARKER = '<!-- spectra-bot:checks -->';
-const dir = process.argv[2] || '.report';
+const dir = process.argv[2] || 'ci-notes';
 const needs = JSON.parse(process.env.NEEDS || '{}');
 const sha = process.env.HEAD_SHA || '';
 const { GITHUB_TOKEN, GITHUB_REPOSITORY: REPO, GITHUB_RUN_ID: RUN_ID, GITHUB_RUN_ATTEMPT: ATTEMPT = '1' } = process.env;

@@ -4,7 +4,8 @@ name: Checks
 # (where the results drive the README's badges), and weekly, so new security
 # advisories show up for unchanged code.
 #
-# Each job leaves a short Markdown note in .report/. On a pull request the
+# Each job leaves a short Markdown note in ci-notes/ (not a hidden folder: the
+# artifact upload skips those). On a pull request the
 # "PR report" job gathers them into one report, and spectra-bot posts it as a
 # single comment that is updated on every push (pr-comment.yml).
 
@@ -24,7 +25,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  REPORT: ${{ github.workspace }}/.report
+  REPORT: ${{ github.workspace }}/ci-notes
 
 jobs:
   lint:
@@ -51,7 +52,7 @@ jobs:
         if: always()
         with:
           name: report-lint
-          path: .report/
+          path: ci-notes/
           if-no-files-found: ignore
 
   test:
@@ -93,7 +94,7 @@ jobs:
         if: always()
         with:
           name: report-test-${{ matrix.os }}-${{ matrix.node }}
-          path: .report/
+          path: ci-notes/
           if-no-files-found: ignore
 
   package:
@@ -136,7 +137,7 @@ jobs:
         if: always()
         with:
           name: report-package-${{ matrix.os }}
-          path: .report/
+          path: ci-notes/
           if-no-files-found: ignore
 
   size:
@@ -169,7 +170,7 @@ jobs:
         if: always()
         with:
           name: report-size
-          path: .report/
+          path: ci-notes/
           if-no-files-found: ignore
 
   # main and weekly: advisories can appear for code that didn't change. On pull requests,
@@ -203,7 +204,7 @@ jobs:
         if: always()
         with:
           name: report-audit
-          path: .report/
+          path: ci-notes/
           if-no-files-found: ignore
 
   dependency-review:
@@ -233,7 +234,7 @@ jobs:
         if: always()
         with:
           name: report-dependency-review
-          path: .report/
+          path: ci-notes/
           if-no-files-found: ignore
 
   # main, weekly and on demand; Snyk's GitHub integration checks pull requests itself
@@ -300,7 +301,7 @@ jobs:
         if: always()
         with:
           name: report-snyk
-          path: .report/
+          path: ci-notes/
           if-no-files-found: ignore
 
   bench:
@@ -309,7 +310,7 @@ jobs:
     timeout-minutes: 20
     env:
       PERF_CHROME_ARGS: --no-sandbox
-      SPECTRA_BENCH_MD: ${{ github.workspace }}/.report/bench.md
+      SPECTRA_BENCH_MD: ${{ github.workspace }}/ci-notes/bench.md
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -324,7 +325,7 @@ jobs:
         if: always()
         with:
           name: report-bench
-          path: .report/
+          path: ci-notes/
           if-no-files-found: ignore
 
   action:
@@ -366,7 +367,7 @@ jobs:
         if: always()
         with:
           name: report-action
-          path: .report/
+          path: ci-notes/
           if-no-files-found: ignore
 
   report:
@@ -385,7 +386,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           pattern: report-*
-          path: .report
+          path: ci-notes
           merge-multiple: true
       - name: Compose the report
         env:
@@ -394,7 +395,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           mkdir -p pr-report
-          node scripts/ci/pr-report.mjs .report > pr-report/comment.md
+          node scripts/ci/pr-report.mjs ci-notes > pr-report/comment.md
           cat pr-report/comment.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v7
         with:

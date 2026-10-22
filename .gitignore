@@ -8,3 +8,4 @@ dist/
 .vscode-test/
 *.vsix
 bench/last-run.json
+ci-notes/

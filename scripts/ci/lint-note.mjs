@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ESLint's JSON output as annotations on the lines (stdout) and as the PR
 // report's note (written to --note), each problem linked to its file and line.
-//   npx eslint . -f json -o eslint.json; node scripts/ci/lint-note.mjs eslint.json --note .report/lint.md
+//   npx eslint . -f json -o eslint.json; node scripts/ci/lint-note.mjs eslint.json --note ci-notes/lint.md
 import fs from 'node:fs';
 import { annotate, fileLink } from './links.mjs';
 
