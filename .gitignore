@@ -8,3 +8,6 @@ dist/
 *.vsix
 bench/last-run.json
 ci-notes/
+# lockfiles only for what ships (the package and the VS Code extension); not for the demo apps or the video project
+fixtures/**/package-lock.json
+video/package-lock.json
