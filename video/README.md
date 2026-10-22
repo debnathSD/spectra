@@ -7,8 +7,9 @@ npm package.
   MCP server and Claude Code to VS Code, the npm package, its CLI, comparing
   two commits with the PDF reports, the AI fix harness, frameworks and open
   source. It is cut to the music, 80 bars at 128 BPM (`src/launch/timeline.js`).
-- `vscode`, `claude-code`, `mcp-server`, `fix-harness`: the short videos on the
-  docs pages. `fix-harness` shows a real test-bench session of `spectra fix`.
+- `vscode`, `claude-code`, `mcp-server`, `fix-harness`, `signing-in`: the short
+  videos on the docs pages. `fix-harness` shows a real test-bench session of
+  `spectra fix`; `signing-in` shows Spectra signing in to an app behind a login.
 - `feature-*`: fourteen silent loops (960 × 540, 30 fps) for the feature cards
   on the Spectra page, six seconds each except `feature-compare` (21 seconds:
   it takes both PDF reports apart). They loop seamlessly.
@@ -37,6 +38,13 @@ Nothing in them is mocked up:
   profiles each three times, fills the Compare tab, screenshots it and
   downloads both PDF reports, rendering their pages with
   `scripts/compare/pdf2png.swift` (macOS). The results are in `public/compare/`.
+- **Signing in** is the real dashboard and CLI. `scripts/record-signin.mjs`
+  starts the login test app (`fixtures/login-demo`, test credentials only) and
+  `spectra dashboard`, fills the sign-in panel for each method, launches
+  Spectra's Chrome and screenshots it signing in, screenshots the app's login
+  page as Spectra gets past it, and runs `spectra performance --quick` behind
+  the login. The results are in `public/signin/`. The website's
+  "Behind a login" loop is cut from this video.
 - Everything else in the film and the loops is real output too, in
   `src/data/launch.js`: a one-command run on the demo app, its components, and
   the docs' real compare, budget and pull request examples.
@@ -69,10 +77,17 @@ The Compare two commits footage and PDF pages (needs macOS for the PDF pages):
 node scripts/record-compare.mjs
 ```
 
+The Signing in footage (build the dashboard first, `npm run build` in the repository root):
+
+```bash
+node scripts/record-signin.mjs
+```
+
 Render into `out/` (a master, a web copy in `out/web/` and a poster each):
 
 ```bash
 npm run render              # the three docs videos
+npm run render -- signing-in # the Signing in video
 npm run render -- launch    # the launch film
 npm run render -- features  # the fourteen feature loops
 ```

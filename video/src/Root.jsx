@@ -5,6 +5,7 @@ import { DURATION as MCP_SERVER, MCP_PROPS, McpServer } from './mcp/McpServer.js
 import { FEATURE_IDS, FeatureLoop } from './features/FeatureLoop.jsx';
 import { DURATION as HARNESS, FixHarnessVideo, HARNESS_PROPS } from './harness/FixHarness.jsx';
 import { DURATION as LAUNCH, Launch, MUSIC as LAUNCH_PROPS } from './launch/Launch.jsx';
+import { DURATION as SIGN_IN, SIGNIN_PROPS, SignIn } from './signin/SignIn.jsx';
 import { FPS, HEIGHT, WIDTH } from './theme.js';
 import { DURATION as VSCODE, VSCODE_PROPS, VSCode } from './vscode/VSCode.jsx';
 
@@ -22,5 +23,6 @@ export const Root = () => (
       <Composition key={feature} id={`feature-${feature}`} component={FeatureLoop} durationInFrames={LOOPS[feature]?.frames ?? 180} fps={30} width={960} height={540} defaultProps={{ feature, poster: LOOPS[feature]?.poster ?? 84 }} />
     ))}
     <Composition id="mcp-server" component={McpServer} durationInFrames={MCP_SERVER} fps={FPS} width={WIDTH} height={HEIGHT} defaultProps={MCP_PROPS} />
+    <Composition id="signing-in" component={SignIn} durationInFrames={SIGN_IN} fps={FPS} width={WIDTH} height={HEIGHT} defaultProps={SIGNIN_PROPS} />
   </>
 );

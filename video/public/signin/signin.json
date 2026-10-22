@@ -1,0 +1,72 @@
+{
+  "page": "http://127.0.0.1:5291/app",
+  "username": "demo@spectra.test",
+  "shots": {
+    "connect": {
+      "note": "the Connect panel, sign-in off",
+      "width": 1156,
+      "height": 185
+    },
+    "form-empty": {
+      "note": "sign-in on: Login form",
+      "width": 1156,
+      "height": 436
+    },
+    "form-filled": {
+      "note": "username and password filled in",
+      "width": 1156,
+      "height": 436
+    },
+    "method-manual": {
+      "note": "I’ll sign in myself",
+      "width": 1156,
+      "height": 402
+    },
+    "method-http": {
+      "note": "Browser prompt",
+      "width": 1156,
+      "height": 340
+    },
+    "method-token": {
+      "note": "Token or cookie",
+      "width": 1156,
+      "height": 356
+    },
+    "method-link": {
+      "note": "Sign-in link",
+      "width": 1156,
+      "height": 340
+    },
+    "signing-in": {
+      "note": "Spectra signing in",
+      "width": 1156,
+      "height": 95
+    },
+    "signed-in": {
+      "note": "signed in, on the protected page",
+      "width": 1156,
+      "height": 109
+    }
+  },
+  "sawSigningIn": true,
+  "status": {
+    "pageUrl": "http://127.0.0.1:5291/app",
+    "signIn": {
+      "method": "form",
+      "signedIn": true
+    },
+    "title": "Dashboard"
+  },
+  "cli": {
+    "command": "SPECTRA_LOGIN_PASSWORD=•••• npx spectra performance --quick --url http://127.0.0.1:5291/app --login-user demo@spectra.test",
+    "lines": [
+      "spectra: signing in through the login form …",
+      "spectra: signed in",
+      "Report 20261022T120840-load (none, 22800 samples)",
+      "TBT 0 ms · long tasks 0 · CLS 0 · FCP 24.0 ms · LCP 24.0 ms · forced layouts 0",
+      "Culprits:",
+      " [info] (Components) No component framework was seen on this page",
+      "Saved ~/acme-store/.spectra/reports/20261022T120840-load.json — view with: spectra dashboard"
+    ]
+  }
+}
