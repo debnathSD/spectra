@@ -162,6 +162,38 @@ await shoot('dashboard-overview', {
   },
 });
 
+// the sign-in panel, filled in with made-up details (nothing is launched with them)
+await shoot('dashboard-signin', {
+  clip: '.connect',
+  prepare: async () => {
+    await page.evaluate(url => {
+      const input = document.querySelector('.connect input');
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, url);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, `${APP.replace(/\/$/, '')}/account`);
+    await page.click('.signin input[role=switch]');
+    await sleep(300);
+    await page.type('.signin input[placeholder="me@example.com"]', 'demo@example.com');
+    await page.type('.signin input[type=password]', 'made-up-password');
+    await clickText('.signin-more button', '^One-time codes');
+    await sleep(300);
+  },
+  regions: {
+    switch: '.signin > .switch',
+    methods: '.signin-methods',
+    page: { sel: '.signin-grid .field', nth: 0 },
+    credentials: [
+      { sel: '.signin-grid .field', nth: 1 },
+      { sel: '.signin-grid .field', nth: 2 },
+    ],
+    more: '.signin-more',
+    note: '.signin-note',
+  },
+});
+// off again, so the session below is a plain one
+await page.click('.signin input[role=switch]');
+await sleep(300);
+
 await shoot('dashboard-session', {
   clip: '.session',
   prepare: async () => {
