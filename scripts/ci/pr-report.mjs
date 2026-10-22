@@ -64,6 +64,14 @@ const rows = [
 ];
 
 const status = id => needs[id]?.result || 'skipped';
+// a job that failed before it could write its note (installing the dependencies, say)
+const NOTED = { lint: 'lint.md', build: 'build.md', size: 'size.md', audit: 'audit.md', 'dependency-review': 'dependency-review.md', snyk: 'snyk.md', bench: 'bench.md', action: 'action.md' };
+for (const row of rows) {
+  const [id] = row;
+  const noted = NOTED[id] ? read(NOTED[id]) : notes(id === 'test' ? 'test-' : 'package-').length;
+  if (status(id) === 'failure' && !noted) row[2] = `Failed before it finished, often at \`npm install\` ([the log](${runUrl}))`;
+  if (status(id) === 'cancelled') row[2] = 'Cancelled';
+}
 const icon = ([id, , note]) => (status(id) === 'success' && /^Not tested/.test(note) ? '⏭️' : ICON[status(id)] || '❔');
 const failed = rows.filter(([id]) => status(id) === 'failure');
 const cancelled = rows.filter(([id]) => status(id) === 'cancelled');
