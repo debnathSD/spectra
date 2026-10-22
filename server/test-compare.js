@@ -116,6 +116,10 @@ test('run-to-run spread widens the band: a delta inside the noise is "same"', ()
       .verdict,
     'improved',
   );
+  // a change no bigger than the spread is noise: one long task in two of three runs
+  assert.equal(judge([0, 0, 0], [0, 1, 1], { minAbs: 1, minRel: 0.15 }).verdict, 'same');
+  // the same change in every run is real
+  assert.equal(judge([0, 0, 0], [1, 1, 1], { minAbs: 1, minRel: 0.15 }).verdict, 'degraded');
 });
 
 test('metrics are classified improved / degraded / same and the verdict follows the key metrics', () => {

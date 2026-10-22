@@ -97,6 +97,19 @@ function fix(dir, agent, maxFixes) {
   });
 }
 
+// Why the harness stopped without a result: the error and the line it came from,
+// not Node's closing "Node.js v24…" line, so the annotation says what crashed.
+function crashOf(err) {
+  const lines = err.split('\n').map(l => l.trimEnd());
+  const at = lines.findIndex(l => /^\s+at /.test(l));
+  if (at > 0) {
+    let msg = at - 1;
+    while (msg > 0 && !/\S/.test(lines[msg])) msg--;
+    return `${lines[msg].trim()} (${lines[at].trim()})`;
+  }
+  return lines.filter(l => l.trim() && !/^Node\.js v/.test(l)).pop()?.trim() || 'no output';
+}
+
 const results = [];
 if (!agentArg || agentArg === 'replay') {
   for (const [i, c] of CASES.entries()) {
@@ -105,8 +118,9 @@ if (!agentArg || agentArg === 'replay') {
     const dir = makeProject(c.id, 5300 + i);
     const t0 = Date.now();
     const { session, err } = await fix(dir, `node ${JSON.stringify(path.join(BENCH, 'agents/replay.mjs'))} ${c.id}`, 1);
-    const got = session?.attempts?.[0]?.outcome || `error: ${err.trim().split('\n').pop()}`;
-    results.push({ case: c.id, expected: c.expect, got, ok: got === c.expect, seconds: Math.round((Date.now() - t0) / 1000), reason: session?.attempts?.[0]?.reason || '', headline: session?.final?.headlines?.find(h => h.kind === 'improved')?.text || '' });
+    const got = session?.attempts?.[0]?.outcome || 'error';
+    const reason = session?.attempts?.[0]?.reason || (session ? '' : crashOf(err));
+    results.push({ case: c.id, expected: c.expect, got, ok: got === c.expect, seconds: Math.round((Date.now() - t0) / 1000), reason, headline: session?.final?.headlines?.find(h => h.kind === 'improved')?.text || '' });
     if (!keep) fs.rmSync(dir, { recursive: true, force: true });
   }
   console.log('\nSpectra fix test bench — scripted agent\n');

@@ -65,9 +65,11 @@ export function judge(beforeValues, afterValues, { minAbs, minRel }) {
   }
   const delta = a.value - b.value;
   const spread = Math.max(b.max - b.min, a.max - a.min);
-  const threshold = Math.max(minAbs, minRel * Math.abs(b.value), spread);
+  const floor = Math.max(minAbs, minRel * Math.abs(b.value));
+  const threshold = Math.max(floor, spread);
+  // below a floor, or no bigger than the spread between runs (0 → 1 long task when the runs vary by 1): noise
   const verdict =
-    Math.abs(delta) < threshold ? 'same' : delta < 0 ? 'improved' : 'degraded';
+    Math.abs(delta) < floor || Math.abs(delta) <= spread ? 'same' : delta < 0 ? 'improved' : 'degraded';
   return {
     verdict,
     delta,

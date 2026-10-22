@@ -1147,7 +1147,7 @@ the workflows' actions. Socket's GitHub app follows `socket.yml`.
    this repository.
 4. **Branch protection** for `main` (*Settings → Rules → Rulesets*): require pull requests, and require the checks
    *Lint*, *Tests (Node 22, ubuntu-latest)*, *Tests (Node 26, ubuntu-latest)*, *Tests (Node 24, macos-latest)*,
-   *Package (Node 22, ubuntu-latest)*, *Package (Node 24, windows-latest)*, *Size budget*, *Dependency review*,
+   *Package (Node 22, ubuntu-latest)*, *Package (Node 24, windows-latest)*, *Links*, *Size budget*, *Dependency review*,
    *Fix harness bench*, *GitHub Action* and *Analyze (javascript-typescript)* to pass. Scorecard
    rewards it too.
 5. **Private vulnerability reporting**, **secret scanning with push protection**, the **Dependency graph** (Dependency
