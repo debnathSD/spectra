@@ -85,7 +85,7 @@
     "@size-limit/file": "^14.2.0",
     "@vitejs/plugin-react": "^6.1.2",
     "d3": "^7.9.0",
-    "eslint": "^9.39.5",
+    "eslint": "^10.13.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
