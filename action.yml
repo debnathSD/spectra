@@ -101,7 +101,7 @@ runs:
         SPECTRA_CHROME_SANDBOX: ${{ inputs.chrome-sandbox }}
         SPECTRA_ARTIFACT_NAME: ${{ inputs.artifact-name }}
     - if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact-name }}
         path: |

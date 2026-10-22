@@ -35,9 +35,9 @@ jobs:
         run: |
           echo "::notice title=Snyk skipped::Add a SNYK_TOKEN repository secret to scan with Snyk (DOCS.md, Project health)."
           echo "Snyk skipped: the repository has no SNYK_TOKEN secret yet." >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: env.SNYK_TOKEN != ''
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: env.SNYK_TOKEN != ''
         with:
           node-version: 22
@@ -51,7 +51,7 @@ jobs:
         run: npx --yes snyk@latest test --sarif-file-output=snyk.sarif --json-file-output=snyk.json
       - name: Results to the Security tab
         if: env.SNYK_TOKEN != '' && hashFiles('snyk.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk.sarif
           category: snyk
