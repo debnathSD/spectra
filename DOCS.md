@@ -1091,7 +1091,8 @@ Three workflows keep the badges at the top of the README honest:
 | Workflow | Runs | What it checks | Where to look |
 | --- | --- | --- | --- |
 | `ci.yml` (**tests**) | push, pull request | `npm test`, the VS Code extension's tests, the fix harness's bench, the GitHub Action on the demo app | the Actions tab |
-| `security.yml` (**security**) | push, pull request, Mondays | `npm audit --omit=dev` (fails on high or critical), Snyk (`snyk test`, high or critical fail it; `snyk monitor` on `main`), and GitHub's dependency review on pull requests | each run's summary; Snyk's results in **Security → Code scanning**; snyk.io for the monitored project |
+| `security.yml` (**security**) | push, pull request, Mondays | `npm audit --omit=dev` (fails on high or critical), and GitHub's dependency review on pull requests | each run's summary |
+| `snyk.yml` (**snyk**) | dependency changes, Mondays, on demand | `snyk test` (high or critical fail it), kept to dependency changes so it stays inside the free plan's monthly tests | **Security → Code scanning**; snyk.io for the imported project, which Snyk monitors and checks pull requests for |
 | `size.yml` (**size budget**) | push, pull request | `scripts/size-report.mjs`: the npm package (packed, unpacked), the install with its dependencies and the number of packages, against budgets in the script; and the dashboard bundle, against the `size-limit` budgets in `package.json` | each run's summary; on pull requests, a comment from size-limit comparing the bundle with `main` |
 
 Socket isn't a workflow: its GitHub app comments on pull requests that change dependencies and reports on `main`,
@@ -1102,9 +1103,16 @@ following `socket.yml` (the demo apps in `fixtures/` and the video project are l
 
 **One-time setup** (each needs the repository owner's account):
 
-1. **Snyk**: sign in at [snyk.io](https://snyk.io) with GitHub (free for open source), copy the API token from
-   *Account settings*, and add it as the repository secret `SNYK_TOKEN` (*Settings → Secrets and variables → Actions*).
-   Until then the Snyk job passes with a note that it was skipped.
+1. **Snyk**: sign in at [snyk.io](https://snyk.io) with GitHub (free for open source).
+   - Copy your token (*Account settings → Auth Token*) and add it as the repository secret `SNYK_TOKEN`
+     (*Settings → Secrets and variables → Actions*). Until then the Snyk workflow passes with a note that it skipped.
+   - *Import GitHub Projects* → `progen-labs/spectra` (not the `debnathSD` mirror), with `fixtures, video` under
+     *Exclude folders*: the demo apps and the video project are never shipped. If `progen-labs` repositories don't
+     appear, grant Snyk access to the organization in GitHub (*Settings → Applications → Authorized OAuth Apps → Snyk*).
+   - In Snyk's GitHub integration settings: under *Pull request status checks*, tick *Only fail for high or critical
+     severity issues* (the same threshold as the workflow); under *PR comment experience*, untick *Create comments for
+     success cases*; leave *Automatic dependency upgrade PRs* off. A GitHub token there is only needed for Snyk's own
+     fix pull requests: if you want them, use a fine-grained token for this repository only.
 2. **Socket**: install the [Socket GitHub app](https://github.com/apps/socket-security) on the `progen-labs`
    organization and give it this repository.
 3. **Private vulnerability reporting**: turn it on under *Settings → Code security*, so the link in `SECURITY.md`

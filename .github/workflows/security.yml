@@ -1,12 +1,11 @@
 name: Security
 
-# Known vulnerabilities in what Spectra installs, three ways:
+# Known vulnerabilities in what Spectra installs:
 # - npm audit on the runtime dependencies (no account needed)
-# - Snyk, when the repository has a SNYK_TOKEN secret: results go to the
-#   Security tab (code scanning), and main is monitored on snyk.io
 # - on pull requests, GitHub's dependency review of added or changed packages
 # It also runs every Monday, so new advisories show up for unchanged code.
-# Socket reviews pull requests through its GitHub app (socket.yml).
+# Snyk has its own workflow (snyk.yml), and Socket reviews pull requests
+# through its GitHub app (socket.yml).
 
 on:
   push:
@@ -40,46 +39,6 @@ jobs:
             console.log(line);
           '
           npm audit --omit=dev --audit-level=high
-
-  snyk:
-    name: Snyk
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    env:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-    steps:
-      - name: Snyk is not set up
-        if: env.SNYK_TOKEN == ''
-        run: |
-          echo "::notice title=Snyk skipped::Add a SNYK_TOKEN repository secret to scan with Snyk (DOCS.md, Project health)."
-          echo "Snyk skipped: the repository has no SNYK_TOKEN secret yet." >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/checkout@v4
-        if: env.SNYK_TOKEN != ''
-      - uses: actions/setup-node@v4
-        if: env.SNYK_TOKEN != ''
-        with:
-          node-version: 22
-      - if: env.SNYK_TOKEN != ''
-        run: npm install --no-audit --no-fund --ignore-scripts
-      - name: Snyk test
-        id: test
-        if: env.SNYK_TOKEN != ''
-        continue-on-error: true
-        run: npx --yes snyk@latest test --severity-threshold=high --sarif-file-output=snyk.sarif
-      - name: Results to the Security tab
-        if: env.SNYK_TOKEN != '' && hashFiles('snyk.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: snyk.sarif
-          category: snyk
-      - name: Keep main monitored on snyk.io
-        if: env.SNYK_TOKEN != '' && github.event_name != 'pull_request'
-        run: npx --yes snyk@latest monitor --project-name=@progen-labs/spectra
-      - name: High or critical vulnerabilities found
-        if: steps.test.outcome == 'failure'
-        run: exit 1
 
   dependency-review:
     name: Dependency review
