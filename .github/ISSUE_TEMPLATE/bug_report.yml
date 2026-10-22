@@ -1,0 +1,56 @@
+name: Bug report
+description: Something in Spectra doesn't work as it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! For a security problem, please don't use an issue; see SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Include error messages as text.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: The command you ran
+      description: For example `npx spectra performance --quick --url http://localhost:3000/`, or the dashboard steps.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Spectra version
+      description: The output of `npx spectra --version`.
+      placeholder: 0.6.1
+    validations:
+      required: true
+  - type: dropdown
+    id: framework
+    attributes:
+      label: The app's framework
+      options: [React, Next.js, Vue, Angular, Svelte, Other or none]
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Node.js, OS and browser
+      description: '`node -v`, your OS, and Chrome, Chromium or Edge with its version.'
+      placeholder: Node 24.1.0, macOS 26, Chrome 141
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where you used it
+      multiple: true
+      options: [Command line, Dashboard, VS Code extension, MCP server or an AI assistant, spectra fix, GitHub Action]
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: A report file, a screenshot, or a small project that shows the problem. Remove anything private first.

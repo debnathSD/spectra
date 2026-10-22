@@ -1,0 +1,26 @@
+# The broken-link check (lychee) for the README, DOCS.md and the other docs,
+# run by the Links job in .github/workflows/checks.yml.
+
+# a few redirects and slow servers are normal; a dead link is not
+max_retries = 3
+timeout = 30
+accept = ["200..=206", "429"]
+include_fragments = false
+
+exclude = [
+  # local pages in examples
+  '^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)',
+  '\.test(/|$)',
+  '^https?://([a-z0-9-]+\.)?example\.(com|org)',
+  # sites that turn away automated checkers (403/999), though the links work in a browser
+  '^https://(www\.)?linkedin\.com',
+  '^https://socket\.dev',
+  '^https://packagephobia\.com',
+  '^https://marketplace\.visualstudio\.com',
+  '^https://www\.npmjs\.com',
+  # badges are images, checked by the badge services themselves
+  '^https://img\.shields\.io',
+  '^https://api\.scorecard\.dev',
+  # private repository pages and links that only exist after a release
+  '^https://github\.com/progen-labs/spectra/(settings|security/advisories/new|releases/tag)',
+]

@@ -1,6 +1,5 @@
 .chrome-profile/
 node_modules/
-package-lock.json
 reports/
 .vite-demo/
 .spectra/

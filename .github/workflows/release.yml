@@ -1,0 +1,105 @@
+name: Release
+
+# Publishes Spectra when a version tag (v0.6.2, v0.7.0-beta.1, …) is pushed:
+#
+#   1. every check runs (checks.yml, the same as on a pull request);
+#   2. the "release" environment waits for a maintainer to approve;
+#   3. the package is published to npm with provenance, through npm's Trusted
+#      Publishing (no npm token is stored in GitHub once it is set up);
+#   4. the GitHub Release gets the changelog's notes, the package and its SBOM,
+#      each with a signed build attestation;
+#   5. the GitHub Action's v1 tag moves to the release.
+#
+# To release: add a "## <version> (<date>)" section to CHANGELOG.md, then
+#   npm version <patch|minor|major> && git push --follow-tags
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Checks
+    # only the canonical repository publishes (not the debnathSD mirror)
+    if: github.repository == 'progen-labs/spectra'
+    uses: ./.github/workflows/checks.yml
+    secrets:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      checks: read
+
+  publish:
+    name: Publish
+    needs: checks
+    if: github.repository == 'progen-labs/spectra'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: release
+      url: https://www.npmjs.com/package/@progen-labs/spectra
+    permissions:
+      contents: write # the GitHub Release, and the v1 tag
+      id-token: write # npm provenance, Trusted Publishing and build attestations
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # Trusted Publishing needs npm 11.5.1 or newer
+      - run: npm install -g npm@11.19.0
+      - run: npm ci --no-audit --no-fund
+      - name: The tag matches package.json, and CHANGELOG.md has its notes
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          inpkg=$(node -p "require('./package.json').version")
+          if [ "$version" != "$inpkg" ]; then
+            echo "::error title=Version mismatch::The tag is $GITHUB_REF_NAME but package.json says $inpkg."
+            exit 1
+          fi
+          node scripts/release-notes.mjs "$version" > "$RUNNER_TEMP/notes.md"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # a pre-release (0.7.0-beta.1) goes to npm's "next" tag, not "latest"
+          if [[ "$version" == *-* ]]; then echo "dist-tag=next" >> "$GITHUB_OUTPUT"; else echo "dist-tag=latest" >> "$GITHUB_OUTPUT"; fi
+      - name: The package, and its SBOM
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/dist"
+          npm pack --pack-destination "$RUNNER_TEMP/dist"
+          npm sbom --omit dev --sbom-format cyclonedx > "$RUNNER_TEMP/dist/spectra-$VERSION.sbom.cdx.json"
+          ls -l "$RUNNER_TEMP/dist"
+      - name: Build attestations for both
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ runner.temp }}/dist/*
+      - name: Publish to npm, with provenance
+        env:
+          # only until Trusted Publishing is set up on npmjs.com; then delete the NPM_TOKEN secret
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DIST_TAG: ${{ steps.version.outputs.dist-tag }}
+        run: npm publish "$RUNNER_TEMP"/dist/progen-labs-spectra-*.tgz --provenance --access public --tag "$DIST_TAG"
+      - name: The GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          prerelease=$([[ "$VERSION" == *-* ]] && echo --prerelease || true)
+          gh release create "$GITHUB_REF_NAME" $prerelease --verify-tag --title "Spectra $VERSION" --notes-file "$RUNNER_TEMP/notes.md" "$RUNNER_TEMP"/dist/*
+      - name: The GitHub Action's v1 tag follows the release
+        if: steps.version.outputs.dist-tag == 'latest'
+        run: |
+          git tag -f v1 "$GITHUB_SHA"
+          git push -f origin refs/tags/v1

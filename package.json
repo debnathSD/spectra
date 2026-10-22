@@ -24,7 +24,8 @@
     "index.html",
     "vite.config.js",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "spectra": "node bin/spectra.js",
@@ -37,7 +38,8 @@
     "test:vscode": "npm --prefix vscode test",
     "bench": "node bench/run.mjs",
     "size": "npm run build && node scripts/size-report.mjs",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"server/**\" --test-coverage-include=\"shared/**\" --test-coverage-include=\"bin/**\" --test-coverage-exclude=\"**/test-*.js\" --test-coverage-exclude=\"server/probe.browser.js\" --test-coverage-lines=70 --test-coverage-branches=70 --test-coverage-functions=72 \"server/**/test-*.js\" \"action/test-*.js\""
   },
   "engines": {
     "node": ">=22.12"
@@ -64,7 +66,7 @@
   ],
   "author": "Progen Labs (Sourav Debnath)",
   "license": "MIT",
-  "homepage": "https://github.com/progen-labs/spectra#readme",
+  "homepage": "https://progen-labs.github.io/website/#spectra",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/progen-labs/spectra.git"

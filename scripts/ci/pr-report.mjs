@@ -103,9 +103,11 @@ const rows = [
   ['lint', link('Lint', 'Lint'), firstLine(read('lint.md'))],
   ['test', 'Tests', matrix('Tests', list => {
     const count = (notes('test-')[0]?.match(/(\d+) passed/) || [])[1];
-    return `${list.length} of ${list.length} runs passed${count ? `, ${count} tests each` : ''}: ${list.map(j => j.name.slice(7, -1)).join(' · ')}`;
+    const coverage = (notes('test-').join('\n').match(/Coverage: lines ([\d.]+)%/) || [])[1];
+    return `${list.length} of ${list.length} runs passed${count ? `, ${count} tests each` : ''}${coverage ? `; ${coverage}% of lines covered` : ''}: ${list.map(j => j.name.slice(7, -1)).join(' · ')}`;
   })],
   ['package', 'Package', matrix('Package', list => `Installs and runs from the packed package: ${list.map(j => j.name.slice(9, -1)).join(' · ')}`)],
+  ['links', link('Links', 'Links'), firstLine(read('links.md'))],
   ['size', link('Size budget', 'Size budget'), (() => {
     const t = read('size.md');
     if (!t) return '';
@@ -140,7 +142,7 @@ const out = [
   '',
   '| | Check | Result |',
   '| :-: | --- | --- |',
-  ...rows.map(r => `| ${ICON[status(r[0])] || '❔'} | ${r[1]} | ${r[2]} |`),
+  ...rows.map(r => `| ${status(r[0]) === 'success' && /^Not checked/.test(r[2]) ? '⏭️' : ICON[status(r[0])] || '❔'} | ${r[1]} | ${r[2]} |`),
 ];
 
 // ------------------------------------------------------------------ what failed, and where
@@ -150,7 +152,7 @@ if (failedJobs.length) {
   for (const job of failedJobs) {
     out.push('', await whereItFailed(job));
     // the job's own note, when it says more than the table (failing tests, lint problems, dependency problems)
-    const id = job.name.startsWith('Tests') ? `test-${job.name.match(/Node (\d+), (\S+)\)/)?.slice(1).reverse().join('-')}` : { Lint: 'lint', 'Dependency review': 'dependency-review', 'Fix harness bench': 'bench', 'Size budget': 'size' }[job.name];
+    const id = job.name.startsWith('Tests') ? `test-${job.name.match(/Node (\d+), (\S+)\)/)?.slice(1).reverse().join('-')}` : { Lint: 'lint', Links: 'links', 'Dependency review': 'dependency-review', 'Fix harness bench': 'bench', 'Size budget': 'size' }[job.name];
     const note = id ? read(`${id}.md`) : '';
     if (note && note.includes('\n')) out.push('', note);
   }

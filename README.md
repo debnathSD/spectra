@@ -376,8 +376,9 @@ and report generation work.
 Every pull request and every push to `main` runs the same checks, and **spectra-bot** comments on each pull request
 with all of their results in one place, updated on every push:
 
-- **tests**: the test suite on Node 22 and 26 (Linux, the oldest and newest supported) and Node 24 (macOS), and the
-  VS Code extension's tests. The packed npm package is also installed and run on Linux (Node 22) and Windows.
+- **tests**: the test suite on Node 22 and 26 (Linux, the oldest and newest supported) and Node 24 (macOS), with a
+  minimum test coverage, and the VS Code extension's tests. The packed npm package is also installed and run on Linux
+  (Node 22) and Windows.
 - **lint**: ESLint, for undefined names, unused code and broken React hooks.
 - **npm audit**: the dependencies Spectra installs, on `main` and weekly, so new advisories show up. On pull
   requests, GitHub's dependency review checks what the change adds.
@@ -388,7 +389,13 @@ with all of their results in one place, updated on every push:
 - **size budget**: the npm package, the install with its dependencies and the dashboard bundle, against budgets,
   compared with `main` on pull requests.
 - **OpenSSF Scorecard**: how well the repository follows open-source security practices.
-- Also on every change: the AI fix harness's test bench, the GitHub Action on the demo app, and CodeQL code scanning.
+- Also on every change: a check of every link in the docs, the AI fix harness's test bench, the GitHub Action on the
+  demo app, and CodeQL code scanning.
+
+Releases are published from GitHub Actions, after every check and a maintainer's approval, with
+[npm provenance](https://docs.npmjs.com/generating-provenance-statements) and signed build attestations, and each
+GitHub Release carries the package and its SBOM. Every action is pinned to a commit, and CI installs from the
+committed lockfile. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 
 Report security issues privately: see [SECURITY.md](SECURITY.md).
 

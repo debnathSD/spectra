@@ -1059,7 +1059,8 @@ action.yml, action/        the GitHub Action (run.mjs, summary.mjs, test-summary
 bench/                     the AI fix harness's test bench (npm run bench; not published to npm)
 video/                     the docs' demo videos, made with Remotion from a real VS Code recording and real MCP
                            output (own package.json; not published to npm; see video/README.md)
-.github/workflows/         checks.yml (every check; spectra-bot's report), pr-comment.yml, codeql.yml, scorecard.yml
+.github/workflows/         checks.yml (every check; spectra-bot's report), pr-comment.yml, release.yml,
+                           release-vscode.yml, codeql.yml, scorecard.yml
 .claude-plugin/            the plugin marketplace (marketplace.json)
 server/testing/            fixtures shared by the tests (synthetic reports, throwaway projects)
 docs/                      images used by the README
@@ -1095,15 +1096,26 @@ every Monday (for new security advisories):
 | Job | What it checks |
 | --- | --- |
 | **Lint** | `npm run lint` (ESLint, `eslint.config.js`): undefined names, unused code, React hooks; no warnings allowed |
-| **Tests** | `npm test` on Node 22 and 26 (Linux: the oldest and newest supported) and Node 24 (macOS); the VS Code extension's tests on Linux |
+| **Tests** | `npm test` on Node 22 and 26 (Linux: the oldest and newest supported) and Node 24 (macOS); on Node 26, `npm run test:coverage` instead, which fails below 70% of lines, 70% of branches or 72% of functions in `server/`, `shared/` and `bin/`; the VS Code extension's tests on Linux |
 | **Package** | `publint --strict`, then the packed package installed in a new project and run (`--version`, `--help`, `agents --print`, `reports`) on Linux with Node 22 and on Windows. It also builds the dashboard, as does Size budget, so there is no separate build job |
+| **Links** | lychee (`lychee.toml`): every link in the README, DOCS.md, CONTRIBUTING.md, CHANGELOG.md and the other docs; on a pull request only when Markdown changed |
 | **Size budget** | `scripts/size-report.mjs`: the npm package, the install with its dependencies, the number of packages and the dashboard bundle (`size-limit` in `package.json`), against budgets; on a pull request, compared with its base |
 | **npm audit** | `main` and weekly: the runtime dependencies; high or critical fail it. Not on pull requests, where Dependency review checks what the change adds (npm audit would fail them for older problems) |
-| **Dependency review** | pull requests only: new dependencies with known vulnerabilities (high or critical fail it) or disallowed licenses |
+| **Dependency review** | pull requests only: new dependencies with known vulnerabilities (high or critical fail it) or a license outside the permissive list in `checks.yml` (MIT, ISC, Apache-2.0, BSD, MPL-2.0 and similar) |
 | **Snyk** | `main` when a `package.json` changes, weekly and on demand (the free plan has a monthly budget): `snyk test`, every severity to the Security tab, high or critical fail it (`scripts/snyk-summary.mjs`). Snyk's GitHub integration checks pull requests |
 | **Fix harness bench** | `bench/run.mjs`: `spectra fix` decides each scripted case correctly; a wrong decision is an annotation on the run |
 | **GitHub Action** | this repository's action on the demo app finds the planted slow component |
 | **PR report** | pull requests only: every job's result, linked to its job, and for each failure the failing step (linked to that line of the log), the files and lines it points at (lint problems, failing tests and where they were thrown, the bench) and the end of the log (`scripts/ci/pr-report.mjs`) |
+
+Every action is pinned to a commit (with its version in a comment, which Dependabot keeps current), and CI installs
+from the committed `package-lock.json` with `npm ci`.
+
+**`release.yml`** publishes a release when a `v<version>` tag is pushed (`npm version …` then `git push --follow-tags`):
+it runs `checks.yml`, waits for approval in the `release` environment, publishes to npm with provenance (npm Trusted
+Publishing), creates the GitHub Release with the version's section of CHANGELOG.md (`scripts/release-notes.mjs`), the
+package and a CycloneDX SBOM, each with a build attestation, and moves the GitHub Action's `v1` tag.
+**`release-vscode.yml`** does the same for the VS Code extension on `vscode-v<version>` tags: its tests, the `.vsix`,
+the Marketplace and Open VSX. Both run only in `progen-labs/spectra`, never in the mirror.
 
 **`pr-comment.yml`** posts that report on the pull request as **spectra-bot**, as one comment updated on every push,
 with the checks other apps ran on the commit (CodeQL, Socket, Snyk's app). It runs as a `workflow_run`, from the
@@ -1138,8 +1150,23 @@ the workflows' actions. Socket's GitHub app follows `socket.yml`.
    *Package (Node 22, ubuntu-latest)*, *Package (Node 24, windows-latest)*, *Size budget*, *Dependency review*,
    *Fix harness bench*, *GitHub Action* and *Analyze (javascript-typescript)* to pass. Scorecard
    rewards it too.
-5. **Private vulnerability reporting** and **secret scanning with push protection**: turn both on under *Settings →
-   Code security*.
+5. **Private vulnerability reporting**, **secret scanning with push protection**, the **Dependency graph** (Dependency
+   review needs it) and **Dependabot alerts and security updates**: turn them on under *Settings → Code security*.
+6. **The `release` environment** (*Settings → Environments → New environment* `release`): add yourself under
+   *Required reviewers*, and under *Deployment branches and tags* allow only tags matching `v*` and `vscode-v*`. Every
+   release then waits for your approval.
+7. **npm Trusted Publishing** (*npmjs.com → @progen-labs/spectra → Settings → Trusted Publisher → GitHub Actions*):
+   organization `progen-labs`, repository `spectra`, workflow `release.yml`, environment `release`. Then, under
+   *Publishing access*, require two-factor authentication and disallow tokens. Until it is set up, a granular npm
+   token in the secret `NPM_TOKEN` works instead (delete it afterwards).
+8. **The VS Code extension**: a Marketplace token in the secret `VSCE_PAT`, and an Open VSX token (namespace
+   `progen-labs`) in `OVSX_PAT`. Without them those steps note that they skipped.
+9. **Actions settings** (*Settings → Actions → General*): workflow permissions *Read repository contents*, *Allow
+   GitHub Actions to create and approve pull requests* off, and allow only GitHub's actions, verified creators and
+   `lycheeverse/lychee-action`, `ossf/scorecard-action`.
+10. **A tag ruleset** for `v*.*.*` and `vscode-v*` (restrict updates and deletions, with the admin bypass). Leave `v1`
+    out of it: the release workflow moves it.
+11. **The OpenSSF Best Practices badge**: register the project at [bestpractices.dev](https://www.bestpractices.dev).
 
 ## Appearance and themes
 
