@@ -80,7 +80,7 @@
     "puppeteer-core": "^25.13.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@size-limit/file": "^14.2.0",
     "@vitejs/plugin-react": "^6.1.2",
