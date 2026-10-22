@@ -1084,6 +1084,32 @@ reports/  .spectra/        generated data (git-ignored)
   [Contributing page](https://progen-labs.github.io/website/#spectra/docs/contributing). `docs/dashboard.webp` in this
   repository is a copy of its `dashboard-overview` screenshot.
 
+## Project health checks (for maintainers)
+
+Three workflows keep the badges at the top of the README honest:
+
+| Workflow | Runs | What it checks | Where to look |
+| --- | --- | --- | --- |
+| `ci.yml` (**tests**) | push, pull request | `npm test`, the VS Code extension's tests, the fix harness's bench, the GitHub Action on the demo app | the Actions tab |
+| `security.yml` (**security**) | push, pull request, Mondays | `npm audit --omit=dev` (fails on high or critical), Snyk (`snyk test`, high or critical fail it; `snyk monitor` on `main`), and GitHub's dependency review on pull requests | each run's summary; Snyk's results in **Security → Code scanning**; snyk.io for the monitored project |
+| `size.yml` (**size budget**) | push, pull request | `scripts/size-report.mjs`: the npm package (packed, unpacked), the install with its dependencies and the number of packages, against budgets in the script; and the dashboard bundle, against the `size-limit` budgets in `package.json` | each run's summary; on pull requests, a comment from size-limit comparing the bundle with `main` |
+
+Socket isn't a workflow: its GitHub app comments on pull requests that change dependencies and reports on `main`,
+following `socket.yml` (the demo apps in `fixtures/` and the video project are left out).
+
+`npm run size` gives the same size table locally. To change a budget, edit `BUDGET` in `scripts/size-report.mjs` or
+`size-limit` in `package.json`, and say why in the commit.
+
+**One-time setup** (each needs the repository owner's account):
+
+1. **Snyk**: sign in at [snyk.io](https://snyk.io) with GitHub (free for open source), copy the API token from
+   *Account settings*, and add it as the repository secret `SNYK_TOKEN` (*Settings → Secrets and variables → Actions*).
+   Until then the Snyk job passes with a note that it was skipped.
+2. **Socket**: install the [Socket GitHub app](https://github.com/apps/socket-security) on the `progen-labs`
+   organization and give it this repository.
+3. **Private vulnerability reporting**: turn it on under *Settings → Code security*, so the link in `SECURITY.md`
+   works. Dependabot alerts can be turned on there too.
+
 ## Appearance and themes
 
 Open **Appearance** in the top bar and choose:

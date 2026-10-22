@@ -1,0 +1,15 @@
+# Socket (socket.dev) reviews every pull request that changes dependencies,
+# through its GitHub app, and reports on main. What it checks: the npm package
+# (package.json) and the VS Code extension (vscode/package.json). The demo
+# apps in fixtures/ and the video project are never shipped, so they are left out.
+version: 2
+
+projectIgnorePaths:
+  - "fixtures/"
+  - "video/"
+
+githubApp:
+  enabled: true
+  pullRequestAlertsEnabled: true
+  dependencyOverviewEnabled: true
+  projectReportsEnabled: true
