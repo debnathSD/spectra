@@ -86,9 +86,12 @@ export function namedAgent(id, { bin, model, budgetUsd, timeoutMs = 10 * 60_000,
   };
 }
 
+// `input` goes to the agent's stdin; without it, stdin is closed from the start
+// (the prompt is in the arguments). An agent that exits before reading its
+// stdin makes the write fail with EPIPE, which must not take Spectra down.
 const run = (cmd, args, { cwd, input, env, signal, timeoutMs, shell = false }) =>
   new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: ['pipe', 'pipe', 'pipe'], shell });
+    const child = spawn(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: [input == null ? 'ignore' : 'pipe', 'pipe', 'pipe'], shell });
     let out = '';
     let err = '';
     child.stdout.on('data', d => (out += d));
@@ -105,7 +108,10 @@ const run = (cmd, args, { cwd, input, env, signal, timeoutMs, shell = false }) =
       signal?.removeEventListener('abort', abort);
       resolve({ code, out, err });
     });
-    child.stdin.end(input ?? '');
+    if (input != null) {
+      child.stdin.on('error', () => {}); // the agent closed its end first
+      child.stdin.end(input);
+    }
   });
 
 /** Claude Code, headless. */
