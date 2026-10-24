@@ -77,7 +77,7 @@ try {
 
 function fix(dir, agent, maxFixes) {
   return new Promise(resolve => {
-    const child = spawn(process.execPath, [path.join(REPO, 'bin/spectra.js'), 'fix', '--max-fixes', String(maxFixes), '--runs', '3', '--agent', agent, '--json'], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [path.join(REPO, 'bin/spectra.js'), 'improve', '--max-fixes', String(maxFixes), '--runs', '3', '--agent', agent, '--json'], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';
     let err = '';
     child.stdout.on('data', d => (out += d));
@@ -149,7 +149,7 @@ if (!agentArg || agentArg === 'replay') {
   const t0 = Date.now();
   const { session, err, code } = await new Promise(resolve => {
     const extra = agent ? ['--agent', agent] : ['--max-budget-usd', arg('budget') || '1'];
-    const child = spawn(process.execPath, [path.join(REPO, 'bin/spectra.js'), 'fix', '--max-fixes', '3', '--runs', '3', ...extra, '--json'], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [path.join(REPO, 'bin/spectra.js'), 'improve', '--max-fixes', '3', '--runs', '3', ...extra, '--json'], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';
     let e = '';
     child.stdout.on('data', d => (out += d));

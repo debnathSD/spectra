@@ -59,13 +59,13 @@ test('mcp: handshake, tool list, version negotiation and protocol errors', async
   assert.equal(init.result.protocolVersion, '2025-06-18');
   assert.equal(init.result.serverInfo.name, 'spectra');
   assert.ok(init.result.capabilities.tools);
-  assert.match(init.result.instructions, /verify_change/);
+  assert.match(init.result.instructions, /improve_next[\s\S]*improve_check[\s\S]*improve_report[\s\S]*verify_change/);
   c.notify('notifications/initialized');
 
   const tools = (await c.request('tools/list')).result.tools;
   assert.deepEqual(
     tools.map(t => t.name),
-    ['profile_page', 'verify_change', 'compare_profiles', 'run_golden_paths', 'list_reports', 'get_report'],
+    ['improve_next', 'improve_check', 'improve_report', 'profile_page', 'verify_change', 'compare_profiles', 'run_golden_paths', 'list_reports', 'get_report'],
   );
   for (const t of tools) {
     assert.equal(t.inputSchema.type, 'object');
@@ -84,6 +84,11 @@ test('mcp: handshake, tool list, version negotiation and protocol errors', async
   const remote = await callTool(c, 'profile_page', { url: 'https://example.com/' });
   assert.equal(remote.result.isError, true);
   assert.match(text(remote), /not on this machine/);
+  // the guided improve loop needs a session, which only improve_next starts (with a browser)
+  const check = await callTool(c, 'improve_check', {});
+  assert.equal(check.result.isError, true);
+  assert.match(text(check), /no session: run `npx spectra improve next` first/);
+  assert.match(text(await callTool(c, 'improve_report', { stop: true })), /no session to stop/);
 
   // a newer client version falls back to the newest one the server speaks
   const c2 = connect(['--project', ws.dir]);
@@ -159,7 +164,7 @@ test('mcp: conforms to the official MCP SDK client', async t => {
   await client.connect(new StdioClientTransport({ command: process.execPath, args: [BIN, 'mcp', '--project', ws.dir], stderr: 'ignore' }));
   assert.equal(client.getServerVersion().name, 'spectra');
   const { tools } = await client.listTools(); // the SDK validates every tool definition
-  assert.equal(tools.length, 6);
+  assert.equal(tools.length, 9);
   const res = await client.callTool({ name: 'get_report', arguments: { id: '20261017T100110-load', section: 'overview' } });
   assert.equal(res.isError, false);
   assert.match(res.content[0].text, /Report 20261017T100110-load/);

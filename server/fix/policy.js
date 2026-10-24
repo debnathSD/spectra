@@ -92,7 +92,9 @@ export function judge(c) {
   if (c.verdict === 'regressed') return { decision: 'discard', outcome: 'slower', reason: `slower: ${worse[0] || 'a key metric got worse'}` };
   if (c.verdict === 'mixed') return { decision: 'discard', outcome: 'mixed', reason: `mixed: ${worse[0] || 'something got worse'}` };
   if (c.verdict !== 'improved') return { decision: 'discard', outcome: 'no-gain', reason: 'no measurable improvement: every change was within run-to-run noise' };
-  const critical = c.findings.added.find(f => f.severity === 'critical');
+  // a new critical problem in the project's own code counts; one in a dependency or a network
+  // resource (a vendor chunk the dev server renamed between runs) is not something the change made
+  const critical = c.findings.added.find(f => f.severity === 'critical' && ownFile(f));
   if (critical) return { decision: 'discard', outcome: 'new-problem', reason: `introduced a critical finding: ${critical.title}` };
   if (c.confidence === 'low') return { decision: 'measure-again', outcome: 'unproven', reason: 'improved, but with low confidence' };
   return { decision: 'keep', outcome: 'kept', reason: better[0] || 'improved', headlines: better };

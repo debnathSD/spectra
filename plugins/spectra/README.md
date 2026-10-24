@@ -10,18 +10,19 @@ before/after measurements, from inside Claude Code. Free and open source, by [Pr
 /plugin install spectra@progen-labs
 ```
 
-Spectra needs Node.js 18+ and a local Chrome, Chromium or Edge. For the fastest start, also add it to your
-project: `npm install --save-dev @progen-labs/spectra`.
+Spectra needs Node.js 22.12 or newer and a local Chrome, Chromium or Edge. For the fastest start, also add it to
+your project: `npm install --save-dev @progen-labs/spectra`.
 
 ## Use
 
-- Ask in plain words: *"make the dashboard page faster"*, *"why does clicking Save feel slow?"*. The
-  **improve-performance** skill profiles the page, fixes one finding at a time, and keeps a change only when
-  Spectra measures an improvement.
-- `/spectra:audit [url]` profiles the page and its user journeys and reports the problems, without editing code.
+- Ask in plain words: *"improve the performance"*, *"make the dashboard page faster"*, *"why does clicking Save
+  feel slow?"*. The **improve-performance** skill runs Spectra's loop: Spectra measures and names the problem,
+  Claude makes one change, Spectra measures it and says keep or undo, and so on, then reports the before → after.
+- `/spectra:audit [url]` measures the page and its user journeys and reports the problems, without editing code.
 
-The plugin runs Spectra's MCP server (`npx @progen-labs/spectra mcp`) with these tools: `profile_page`,
-`verify_change`, `compare_profiles`, `run_golden_paths`, `list_reports` and `get_report`.
+The plugin runs Spectra's MCP server (`npx @progen-labs/spectra mcp`) with these tools: `improve_next`,
+`improve_check`, `improve_report`, `profile_page`, `verify_change`, `compare_profiles`, `run_golden_paths`,
+`list_reports` and `get_report`.
 
 Full guide: <https://progen-labs.github.io/website/#spectra/docs/claude-code>
 

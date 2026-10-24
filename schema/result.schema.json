@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://unpkg.com/@progen-labs/spectra/schema/result.schema.json",
   "title": "Spectra result",
-  "description": "What `spectra … --json` prints and `--out` writes. A small envelope that points at the full reports on disk. Additive changes keep schemaVersion; breaking changes bump it.",
+  "description": "What `spectra \u2026 --json` prints and `--out` writes. A small envelope that points at the full reports on disk. Additive changes keep schemaVersion; breaking changes bump it.",
   "type": "object",
   "required": [
     "schemaVersion",
@@ -19,7 +19,8 @@
         "profile",
         "evaluation",
         "compare",
-        "reports"
+        "reports",
+        "improve"
       ]
     },
     "spectraVersion": {
@@ -80,6 +81,18 @@
       },
       "then": {
         "$ref": "#/$defs/reports"
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "improve"
+          }
+        }
+      },
+      "then": {
+        "$ref": "#/$defs/improve"
       }
     }
   ],
@@ -258,7 +271,7 @@
             "string",
             "null"
           ],
-          "description": "exact, or located (≈, found by searching the source)."
+          "description": "exact, or located (\u2248, found by searching the source)."
         },
         "abs": {
           "type": [
@@ -742,6 +755,54 @@
               "critical"
             ]
           }
+        }
+      }
+    },
+    "improve": {
+      "type": "object",
+      "description": "One step of a guided `spectra improve` session (next, check, report or stop): the text shown to whoever makes the changes, and the session state.",
+      "required": [
+        "step",
+        "message",
+        "session"
+      ],
+      "properties": {
+        "step": {
+          "enum": [
+            "next",
+            "check",
+            "report",
+            "stop"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "description": "What was printed: the problem to fix, the verdict on a change, or the report."
+        },
+        "task": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "The problem to work on now, if any: title, file, line, severity, impactMs, fix, culprits."
+        },
+        "attempt": {
+          "type": "object",
+          "description": "check only: the change just measured, with outcome (kept, no-gain, slower, mixed, new-problem, unproven, checks-failed) and reason."
+        },
+        "result": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "report and stop: the overall before \u2192 after (verdict, confidence, headlines) when something was kept."
+        },
+        "session": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "The whole session: baseline, current (the result files of the latest kept state), queue, task, attempts, skipped, kept."
         }
       }
     }

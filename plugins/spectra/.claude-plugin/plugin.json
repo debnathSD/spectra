@@ -1,7 +1,7 @@
 {
   "name": "spectra",
   "displayName": "Spectra",
-  "version": "0.3.1",
+  "version": "0.7.0",
   "description": "Find the file, function and component that make your frontend slow, fix them, and prove each fix with before/after measurements. Free and open source.",
   "author": { "name": "Progen Labs", "url": "https://github.com/progen-labs" },
   "homepage": "https://progen-labs.github.io/website/#spectra/docs/claude-code",

@@ -279,6 +279,12 @@ test('findings: new, resolved and persisting are matched by stable key, not posi
   });
   const { findings } = compareSides(side([before]), side([after]));
   assert.equal(findingKey(before.findings[0]), 'long-task:src/a.ts:burn');
+  // a chunk keeps its key across builds, whatever hash or query string the bundler gives it
+  const chunk = (id, title) => findingKey({ id, title, culprits: [] });
+  assert.equal(chunk('large-3', 'react-dom-hmN8LOy-.js?v=1 is 2.47 MB over the wire'), chunk('large-7', 'react-dom-Zq1x_9ab.js?v=2 is 2.47 MB over the wire'));
+  assert.equal(chunk('uncompressed-1', 'main.3f9a1c2b.js is served uncompressed'), chunk('uncompressed-2', 'main.9c8b7a6f.js is served uncompressed'));
+  assert.equal(chunk('slow-request-1', 'assets/123.chunk.js took 900 ms'), chunk('slow-request-1', 'assets/456.chunk.js took 900 ms'));
+  assert.notEqual(chunk('large-1', 'react-dom-hmN8LOy-.js is 2.47 MB over the wire'), chunk('large-1', 'vendor-hmN8LOy-.js is 2.47 MB over the wire'));
   assert.deepEqual(
     findings.added.map(f => f.id),
     ['forced-src/b.ts-measure'],

@@ -4,6 +4,16 @@ Every release of Spectra, newest first. Versions follow [semantic versioning](ht
 
 Update an existing install with `npm install --save-dev @progen-labs/spectra@latest`, and check yours with `npx spectra --version`.
 
+## 0.7.0 (25 October 2026)
+
+**Ask your AI agent to "improve the performance", and Spectra does the rest.** Spectra's main command is now `spectra improve`: it measures the app, finds the problems in your own code, has each one fixed, measures the change, and keeps only what measurably helped. Everything else Spectra can do is still there, behind it.
+
+- **`spectra improve`**, two ways with the same rules. **Guided**: `npx spectra improve next` measures and names the first problem (file, line, cost, suggested fix); the AI agent you are talking to, or you, makes that one change; `npx spectra improve check` runs your checks, measures again and says keep or undo, then names the next problem; `npx spectra improve report` sums it up. Any agent can drive it, with no extra tools. **Unattended**: `npx spectra improve` finds a coding agent on your machine (Claude Code, Codex, Gemini CLI, Copilot CLI, Cursor, OpenCode or Amp; `--agent` to choose) and does the whole loop in a copy of your last commit, with the kept fixes as commits on `spectra/improve-<time>`. `spectra fix` stays as the old name. Sessions live in `.spectra/improve/`. See [Improve the performance](https://progen-labs.github.io/website/#spectra/docs/improve).
+- **The MCP server** has the same loop as tools: `improve_next`, `improve_check` and `improve_report`, next to the six it had. The Claude Code plugin's *improve-performance* skill uses them.
+- **Your agent knows the loop.** The knowledge doc Spectra writes for AI agents, and `npx spectra` with no command, now lead with it.
+- **A fairer keep rule.** A change is undone for a new critical finding only when the finding is in your own code: a vendor chunk the dev server renamed between measurements no longer undoes a good fix. In `spectra compare`, a chunk keeps its identity across content hashes and query strings (`react-dom-hmN8LOy-.js?v=1` and `react-dom-Zq1x_9ab.js?v=2` are the same resource).
+- **Docs for the simple path first.** The README and the website lead with install, ask, review; the command reference, budgets, CI, MCP, the dashboard and the rest follow.
+
 ## 0.6.1 (22 October 2026)
 
 - **Node.js 22.12 or newer.** Spectra's Chrome driver, puppeteer-core, needs it, so `engines` in `package.json` now says so instead of Node 18, and every release is installed and run on it in CI. Node 20 reached its end of life in April 2026.

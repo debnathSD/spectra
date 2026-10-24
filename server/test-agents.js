@@ -52,7 +52,7 @@ test("the user's own text and files are left alone", () => {
   assert.ok(agents.startsWith(mine.trim()));
   // the user edits around the block; an update replaces only the block
   fs.writeFileSync(path.join(root, 'AGENTS.md'), `${agents}\n## Later\n\nMore notes.\n`);
-  const edited = read(root, 'AGENTS.md').replace('Spectra: frontend performance, measured', 'an older version');
+  const edited = read(root, 'AGENTS.md').replace('Spectra: make the frontend faster, with measurements', 'an older version');
   fs.writeFileSync(path.join(root, 'AGENTS.md'), edited);
   assert.equal(installAgentDocs({ root, targets: ['agents-md'] })[0].result, 'updated');
   const updated = read(root, 'AGENTS.md');
@@ -116,7 +116,7 @@ test('once per version: written once, refreshed after an update, never back afte
   // an update rewrites only what is still there
   fs.rmSync(path.join(root, '.cursor'), { recursive: true });
   const agents = read(root, 'AGENTS.md');
-  fs.writeFileSync(path.join(root, 'AGENTS.md'), agents.replace('Spectra: frontend performance, measured', 'an older version'));
+  fs.writeFileSync(path.join(root, 'AGENTS.md'), agents.replace('Spectra: make the frontend faster, with measurements', 'an older version'));
   writeNote(root, { version: '0.0.1' });
   assert.deepEqual(run().changed.map(r => r.file), ['AGENTS.md']);
   assert.equal(has(root, '.cursor/rules/spectra.mdc'), false);

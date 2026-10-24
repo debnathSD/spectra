@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { commandAgent } from './agent.js';
+import { AGENTS, agentFromOption, commandAgent, detectAgent, findExecutable, namedAgent } from './agent.js';
 import { detectChecks } from './checks.js';
 import { runFix } from './harness.js';
 import { fixPrompt, judge, rankFindings, scopeProblem } from './policy.js';
@@ -57,7 +57,10 @@ test('judges a change from the comparison', () => {
   assert.equal(judge(comparison('neutral')).outcome, 'no-gain');
   assert.equal(judge(comparison('regressed')).outcome, 'slower');
   assert.equal(judge(comparison('mixed')).outcome, 'mixed');
-  assert.equal(judge(comparison('improved', 'high', { added: [{ severity: 'critical', title: 'Long task' }] })).outcome, 'new-problem');
+  assert.equal(judge(comparison('improved', 'high', { added: [{ severity: 'critical', title: 'Long task', file: 'src/App.jsx' }] })).outcome, 'new-problem');
+  // a new critical finding outside the project's code (a renamed vendor chunk, a request) is not the change's doing
+  assert.equal(judge(comparison('improved', 'high', { added: [{ severity: 'critical', title: 'react-dom-Zq1x.js is 2.47 MB over the wire', file: null, culprits: [] }] })).decision, 'keep');
+  assert.equal(judge(comparison('improved', 'high', { added: [{ severity: 'critical', title: 'big', file: 'node_modules/x/index.js' }] })).decision, 'keep');
 });
 
 test('tells the agent the finding and the rules', () => {
@@ -224,4 +227,42 @@ test('finds checks in package.json and runs any agent command', async () => {
   assert.equal(res.summary, 'rewrote Row');
   assert.equal(fs.readFileSync(path.join(root, 'app/src/Row.jsx'), 'utf8'), '// Finding: Row is slow\n');
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('finds the coding agent on the machine: the one in use first, then any installed; runs it by name', async () => {
+  const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'spectra-agents-bin-'));
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'spectra-agents-home-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'spectra-agents-root-'));
+  const fake = (name, body = 'echo "done: $*"') => {
+    fs.writeFileSync(path.join(bin, name), `#!/bin/sh\n${body}\n`);
+    fs.chmodSync(path.join(bin, name), 0o755);
+  };
+  const env = { PATH: bin };
+  assert.equal(detectAgent({ root, home, env }), null, 'nothing installed');
+  fake('codex');
+  fake('gemini');
+  assert.equal(detectAgent({ root, home, env }).id, 'codex', 'the first installed one, in the order of AGENTS');
+  fs.mkdirSync(path.join(home, '.gemini'));
+  assert.equal(detectAgent({ root, home, env }).id, 'gemini', 'the one the machine shows signs of');
+  fs.mkdirSync(path.join(root, '.codex'));
+  assert.equal(detectAgent({ root, home, env }).id, 'codex', 'the one the project shows signs of');
+  assert.equal(findExecutable('gemini', { env, home }), path.join(bin, 'gemini'));
+  assert.equal(findExecutable('claude', { env: { PATH: bin, SPECTRA_CLAUDE: '/x/claude' }, home }), '/x/claude', 'SPECTRA_CLAUDE wins');
+  fs.mkdirSync(path.join(home, '.local/bin'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.local/bin/claude'), '');
+  assert.equal(findExecutable('claude', { env, home }), path.join(home, '.local/bin/claude'), "the installer's folder, off PATH");
+
+  // a named agent gets the prompt the way its CLI takes it, and its last line is the summary
+  const gemini = namedAgent('gemini', { env, home });
+  assert.equal(gemini.name, 'Gemini CLI');
+  const res = await gemini.run('Fix one thing.', { cwd: root });
+  assert.equal(res.summary, 'done: -p Fix one thing. --yolo');
+  fake('codex', 'echo "boom" >&2; exit 3');
+  await assert.rejects(namedAgent('codex', { env, home }).run('x', { cwd: root }), /Codex CLI exited with code 3: boom/);
+  await assert.rejects(namedAgent('amp', { env, home }).run('x', { cwd: root }), /could not start Amp/);
+  assert.equal(agentFromOption('./my-agent.sh').name, './my-agent.sh', 'anything else is a command');
+  assert.equal(agentFromOption('claude', { env, home }).id, 'claude');
+  assert.throws(() => namedAgent('nope'), /unknown agent "nope"/);
+  assert.deepEqual(Object.keys(AGENTS).slice(0, 3), ['claude', 'codex', 'gemini']);
+  for (const d of [bin, home, root]) fs.rmSync(d, { recursive: true, force: true });
 });

@@ -2,13 +2,14 @@
 /**
  * Spectra CLI — a Progen Labs project.
  *
- *   spectra performance [--url <page>] [profiler options]   profile a frontend
+ *   spectra improve [next|check|report|stop]                 make the app faster: measure, fix, verify, keep
+ *   spectra performance [--url <page>] [profiler options]   measure only: the page and its user journeys
  *   spectra compare <before> <after>                         before vs after, noise-aware
  *   spectra reports                                          list saved reports
- *   spectra mcp [--project <dir>]                            MCP server for AI tools (stdio)
- *   spectra fix [options]                                    the AI fix harness: fix, check, verify
  *   spectra dashboard                                        open the dashboard UI
+ *   spectra mcp [--project <dir>]                            MCP server for AI tools (stdio)
  *   spectra agents [--remove]                                teach AI agents about Spectra
+ *   spectra fix                                              the old name of spectra improve
  *   spectra --help                                           show this help
  *   spectra --version                                        print the version
  *
@@ -34,35 +35,55 @@ const argv = process.argv.slice(2);
 const command = argv[0];
 const rest = argv.slice(1);
 
+const INTRO = `
+Spectra ${pkg.version} — make your web app faster (Progen Labs)
+
+  npx spectra improve        Measure the app, fix what is slow in your own code,
+                             measure again, and keep only what measurably helped
+  …or ask your AI agent:     "improve the performance"  (it knows Spectra)
+
+  npx spectra performance    Measure only: the page and its user journeys
+  npx spectra dashboard      See the results
+  npx spectra --help         Every command and option
+`;
+
 const HELP = `
-Spectra ${pkg.version} — frontend performance profiler (Progen Labs)
+Spectra ${pkg.version} — make your web app faster (Progen Labs)
 
 Usage:
-  spectra performance [options]   Profile a frontend build and report the culprits
+  spectra improve [options]       Make the app faster: measure it, have the problems
+                                  in your own code fixed one at a time, measure each
+                                  change, and keep only what helped. A coding agent on
+                                  this machine makes the changes in a copy of your
+                                  code; the fixes land on a new branch
+  spectra improve next|check|report|stop
+                                  The same, step by step, for the AI agent you are
+                                  talking to (or for you): "next" names the problem,
+                                  "check" measures your change and says keep or undo
+                                  (spectra improve --help for every option)
+  spectra performance [options]   Measure only: profile the app and its user journeys,
+                                  and report the culprits with file, line and fix
   spectra compare <before> <after> [options]
                                   Compare two profiles; a change counts only when
                                   it is bigger than the noise between runs
   spectra reports [--json]        List saved reports (ids for compare / dashboard)
+  spectra dashboard               Open the Spectra dashboard UI
   spectra mcp [--project <dir>] [--allow-remote]
                                   Run as an MCP server (stdio) for Claude Code,
                                   Cursor, VS Code and other AI tools
-  spectra fix [options]           The AI fix harness: an agent fixes the costliest
-                                  findings in a copy of your code; a change is kept
-                                  only if your checks pass and it measures faster
-                                  (spectra fix --help for its options)
-  spectra dashboard               Open the Spectra dashboard UI
   spectra agents [--remove]       Teach your AI agents (Claude Code, Copilot, Cursor,
                                   Codex, Windsurf, …) what Spectra does, so you can
                                   ask them in plain words (spectra agents --help)
+  spectra fix                     The old name of spectra improve
   spectra --help, -h              Show this help
   spectra --version, -v           Print the version
 
 Run it from inside your project. With no --url, Spectra detects the framework,
 starts your dev server (npm run dev/start/serve), evaluates it, then shuts it
-down. By default it records a baseline page load, auto-discovers the actionable
-elements, synthesizes golden-path journeys, runs them (safe actions only), and
-prints a performance matrix. Every path is saved as a report you can open in
-the dashboard. Reports go to .spectra/reports in the current directory.
+down. spectra performance records a baseline page load, auto-discovers the
+actionable elements, synthesizes golden-path journeys, runs them (safe actions
+only), and prints a performance matrix. Every path is saved as a report you can
+open in the dashboard. Reports go to .spectra/reports in the current directory.
 
 performance options:
   --url <page>          Evaluate an already-running page; skips self-boot
@@ -101,13 +122,14 @@ Budgets and sign-in (spectra.config.json in your project root):
 Exit codes: 0 done · 1 could not run · 2 over budget / regression
 
 Examples:
+  spectra improve                                  # fix what is slow, verified, on a branch
+  spectra improve next                             # the first problem, for your AI agent (or you)
   spectra performance                              # self-boot + golden-path suite
   spectra performance --paths 8                    # cap the suite at 8 journeys
   spectra performance --url http://localhost:3000/ # evaluate a running server
   spectra performance --quick --runs 5 --out before.json
   spectra performance --quick --runs 5 --out after.json
   spectra compare before.json after.json           # did the change help?
-  spectra fix --max-fixes 3                        # let an agent fix them, verified
   spectra performance --json | jq .summary         # pipe it anywhere
   SPECTRA_LOGIN_PASSWORD=… spectra performance --login-url http://localhost:3000/login --login-user me@example.com
 `;
@@ -295,7 +317,7 @@ function runDashboard() {
 
 // The first run in a project teaches its AI agents about Spectra (server/agents.js):
 // once per version, never in CI or under npx, and never back after a removal.
-if (['performance', 'perf', 'compare', 'reports', 'dashboard', 'ui', 'fix'].includes(command)) {
+if ([undefined, 'improve', 'fix', 'performance', 'perf', 'compare', 'reports', 'dashboard', 'ui'].includes(command)) {
   try {
     const { ensureAgentDocs } = await import('../server/agents.js');
     const { changed } = ensureAgentDocs();
@@ -307,6 +329,17 @@ if (['performance', 'perf', 'compare', 'reports', 'dashboard', 'ui', 'fix'].incl
 }
 
 switch (command) {
+  case 'improve':
+  case 'fix':
+    // In-process, in the user's project: it manages its own copy, dev server
+    // and child processes (server/improve/cli.js, server/fix/cli.js).
+    import('../server/improve/cli.js')
+      .then(m => m.main(rest))
+      .catch(err => {
+        console.error(`spectra: ${err.message}`);
+        process.exit(1);
+      });
+    break;
   case 'performance':
   case 'perf':
     runProfile()
@@ -327,14 +360,6 @@ switch (command) {
       });
     break;
   }
-  case 'fix':
-    // In-process, in the user's project: the harness manages its own copy,
-    // dev server and child processes (server/fix/cli.js).
-    import('../server/fix/cli.js').catch(err => {
-      console.error(`spectra: ${err.message}`);
-      process.exit(1);
-    });
-    break;
   case 'mcp':
     // In-process: stdin/stdout are the protocol channel, and the working
     // directory stays the user's (the project, unless --project or the
@@ -360,6 +385,8 @@ switch (command) {
     console.log(pkg.version);
     break;
   case undefined:
+    console.log(INTRO);
+    break;
   case '--help':
   case '-h':
   case 'help':

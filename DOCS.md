@@ -131,14 +131,15 @@ compare before and after a fix. **Delete** removes the selected one.
 
 ## AI agents know Spectra
 
-The first time Spectra runs in a project it is installed in, it writes its knowledge doc ([`agents/spectra.md`](agents/spectra.md): what it does, which command
-answers which request, how to read the results, how to prove a change helped, the rules) where AI coding agents read
+The first time Spectra runs in a project it is installed in, it writes its knowledge doc ([`agents/spectra.md`](agents/spectra.md): the
+`spectra improve` loop an agent runs when asked to improve the performance, which command answers which other request,
+how to read the results, the rules) where AI coding agents read
 their project instructions: a block in `AGENTS.md` (Codex, GitHub Copilot's coding agent, Cursor, Windsurf, Zed and
 others), and for the agents the project or machine uses, `.claude/skills/spectra/SKILL.md` plus a note in `CLAUDE.md`,
 `.github/instructions/spectra.instructions.md` (GitHub Copilot), `.cursor/rules/spectra.mdc`,
 `.windsurf/rules/spectra.md`, `.clinerules/spectra.md`, `.roo/rules/spectra.md` and `GEMINI.md`. There is no install
-script (so package managers and supply-chain scanners have nothing to flag): `bin/spectra.js` does it before the first
-`performance`, `compare`, `reports`, `dashboard` or `fix` in the project, once per Spectra version (a note in
+script (so package managers and supply-chain scanners have nothing to flag): `bin/spectra.js` does it on the first bare `npx spectra`
+(which prints a short intro) or the first `improve`, `performance`, `compare`, `reports` or `dashboard` in the project, once per Spectra version (a note in
 `.spectra/agent-docs.json` remembers it; after an update it only refreshes what is already there). Never in CI, under
 `npx` without an install, for a global install, after `spectra agents --remove`, or with `SPECTRA_AGENT_DOCS=0` or
 `"agentDocs": false` in `spectra.config.json`. Shared files are only touched between
@@ -164,7 +165,7 @@ Spectra how your app signs in, and it signs in before it records anything:
 page, the username and any selectors are remembered in your browser; passwords, codes, tokens and cookies stay in that
 tab's memory only. **Go** signs in again with the same details when the page asks.
 
-**On the command line** (and so in CI, the VS Code extension, the MCP server and `spectra fix`, which all run it):
+**On the command line** (and so in CI, the VS Code extension, the MCP server and `spectra improve`, which all run it):
 
 ```bash
 SPECTRA_LOGIN_PASSWORD="$TEST_PASSWORD" npx spectra performance --login-url http://localhost:3000/login --login-user demo@example.com
@@ -968,13 +969,27 @@ severity: critical, then warning, then info), so the single most expensive, most
   wrapped in multiple HOCs, can occasionally match a different, coincidentally-matching definition in the same
   file.
 
-## The AI fix harness
+## spectra improve
 
-`spectra fix` (`server/fix/`) runs a coding agent in a loop and keeps only the changes that Spectra can prove. The
-agent edits; everything else is the harness's code:
+`spectra improve` is the main command: measure, have the problems in the project's own code fixed one at a time,
+measure each change, keep only what helped. Two modes share the rules in `server/fix/policy.js`:
 
-- `cli.js`: options, the session directory (`.spectra/fix/<time>/`), the dev server, cleanup on exit or a signal,
-  the report and the history. Profiles and comparisons run the regular CLI with `--json`, in the copy, with
+- **Guided** (`server/improve/`): `spectra improve next | check | report | stop`. `session.js` is the state machine
+  (start a session from a baseline, hand out the next problem, judge a change, the report), with every measurement,
+  comparison and check passed in, so `test-improve.js` runs it without a browser. `cli.js` keeps the session in
+  `.spectra/improve/current.json`, boots the dev server for the commands that measure (unless `--url`), runs the
+  profiles through `bin/spectra.js performance --quick --json`, the checks through `fix/checks.js`, and prints the
+  text an agent (or a person) acts on; with `--json` the same text is `message` in a `kind: 'improve'` result. The
+  caller edits the working tree; Spectra says keep or undo. `spectra improve` with no step and no agent on the
+  machine starts a guided session.
+- **Unattended** (`server/fix/`, the harness, also `spectra fix`, its old name): a coding agent makes the changes in
+  a copy of the last commit. `agent.js` knows the agent CLIs by name (`AGENTS`: Claude Code, Codex, Gemini, Copilot,
+  Cursor, OpenCode, Amp: how each takes one prompt in print mode), finds one on the machine (`detectAgent`: the one
+  the project or home folder shows signs of, then any installed; `SPECTRA_CLAUDE` names Claude Code's executable) and
+  runs it (`namedAgent`), or runs any `--agent "<command>"`. The agent edits; everything else is the harness's code:
+
+- `cli.js` (`runFixCli`): options, the session directory (`.spectra/improve/<time>/`), the dev server, cleanup on
+  exit or a signal, the report and the history. Profiles and comparisons run the regular CLI with `--json`, in the copy, with
   `PERF_FRONTEND_DIR` and `PERF_REPORTS_DIR` pointing at the copy and the session.
 - `harness.js`: the loop, with every dependency passed in (profile, compare, agent, workspace, checks), so it is tested
   without a browser or a model. Checks must pass before any change; then for each finding: agent → scope rules →
@@ -983,9 +998,11 @@ agent edits; everything else is the harness's code:
   (`findingKey`) the new measurement no longer shows is skipped as already resolved, not handed to the agent.
 - `policy.js`: which findings to attempt (critical/warning, in the project's own files, one per file and line, minus
   earlier failures unless `--retry`), the scope rules (no `package.json`, lockfiles, configuration, tests, CI or
-  deletions; at most 150 lines), the keep rule (improved, confidence medium or high, no new critical finding) and the
-  agent's instructions.
-- `workspace.js`: the git worktree of `HEAD` on `spectra/fix-<time>`, `node_modules` linked in (or `--install`),
+  deletions; at most 150 lines), the keep rule (improved, confidence medium or high, no new critical finding in the
+  project's own code: a vendor chunk renamed between measurements does not count) and the agent's instructions.
+  `shared/compare.js` gives a chunk the same key across content hashes and query strings (`resourceName`), so a
+  rebuilt dependency is not "resolved" and "added" at once.
+- `workspace.js`: the git worktree of `HEAD` on `spectra/improve-<time>`, `node_modules` linked in (or `--install`),
   `.spectra/` added to `.git/info/exclude`, diffs, commits of exactly the changed files, `reset --hard` + `clean` to
   undo, removal (the branch stays only if it has commits).
 - `agent.js`: Claude Code headless (`-p`, `acceptEdits`, tools Read/Edit/Write/Glob/Grep, Bash/WebFetch/WebSearch
@@ -1017,13 +1034,14 @@ cleared, is why the loop now skips resolved findings.
 - The tool's private Chrome profile (in your temp directory, under `spectra-chrome/`) can contain cookies for the app
   after you sign in. It is separate from your own Chrome profile and never inside your repository.
 - `spectra dashboard` listens on `127.0.0.1` only.
-- `spectra fix` sends nothing itself, but the coding agent it runs (Claude Code by default) reads the files it works
-  on and sends them to its provider. Its changes stay on a local branch until you merge them.
+- `spectra improve` sends nothing itself, but the coding agent it runs unattended (or the one you talk to in the
+  guided loop) reads the files it works on and sends them to its provider. Unattended changes stay on a local branch
+  until you merge them.
 
 ## Project layout and contributing
 
 ```
-bin/spectra.js             the CLI: performance, compare, reports, dashboard
+bin/spectra.js             the CLI: improve, performance, compare, reports, dashboard, mcp, agents
 server/probe.browser.js    in-page probe (React / Vue / Angular hooks + vitals + component screen positions), injected before the app loads
 server/chrome.js           find / launch / attach Chrome
 server/recorder.js         CDP orchestration: start/stop, trace stream, metrics, sign-in, component locations
@@ -1037,7 +1055,8 @@ server/cli.js              single-page profiles (--quick, --mode, --runs, --scen
 server/compare-cli.js      spectra compare
 server/reports-cli.js      spectra reports
 server/mcp.js              spectra mcp: the MCP server (stdio)
-server/fix/                spectra fix: the AI fix harness (cli, harness loop, policy, workspace, agent, checks, report)
+server/improve/            spectra improve: the command, and the guided session (next, check, report, stop)
+server/fix/                spectra improve, unattended: the harness (cli, loop, policy, workspace, agents, checks, report)
 server/args.js, output.js, project-config.js   argv parsing; --json/--out and exit codes; spectra.config.json
 server/api.js              the dashboard's /api/* endpoints + Server-Sent Events
 server/plugin.js           mounts that API in the Vite dev server (npm run dev)
@@ -1103,14 +1122,14 @@ every Monday (for new security advisories):
 | **npm audit** | `main` and weekly: the runtime dependencies; high or critical fail it. Not on pull requests, where Dependency review checks what the change adds (npm audit would fail them for older problems) |
 | **Dependency review** | pull requests only: new dependencies with known vulnerabilities (high or critical fail it) or a license outside the permissive list in `checks.yml` (MIT, ISC, Apache-2.0, BSD, MPL-2.0 and similar) |
 | **Snyk** | `main` when a `package.json` changes, weekly and on demand (the free plan has a monthly budget): `snyk test`, every severity to the Security tab, high or critical fail it (`scripts/snyk-summary.mjs`). Snyk's GitHub integration checks pull requests |
-| **Fix harness bench** | `bench/run.mjs`: `spectra fix` decides each scripted case correctly; a wrong decision is an annotation on the run |
+| **Fix harness bench** | `bench/run.mjs`: `spectra improve` decides each scripted case correctly; a wrong decision is an annotation on the run |
 | **GitHub Action** | this repository's action on the demo app finds the planted slow component |
 | **PR report** | pull requests only: every job's result, linked to its job, and for each failure the failing step (linked to that line of the log), the files and lines it points at (lint problems, failing tests and where they were thrown, the bench) and the end of the log (`scripts/ci/pr-report.mjs`) |
 
 Every action is pinned to a commit (with its version in a comment, which Dependabot keeps current), and CI installs
 from the committed `package-lock.json` with `npm ci`.
 
-**`release.yml`** publishes a release when a `v<version>` tag is pushed (`npm version …` then `git push --follow-tags`):
+**`release.yml`** publishes a release when a `v<version>` tag is pushed (`npm version …` then `git push --follow-tags`). A version that is already on npm (published by hand with `npm publish`, with 2FA) is not published again: the workflow still creates the GitHub Release and moves `v1`:
 it runs `checks.yml`, waits for approval in the `release` environment, publishes to npm with provenance (npm Trusted
 Publishing), creates the GitHub Release with the version's section of CHANGELOG.md (`scripts/release-notes.mjs`), the
 package and a CycloneDX SBOM, each with a build attestation, and moves the GitHub Action's `v1` tag.

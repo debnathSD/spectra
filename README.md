@@ -1,9 +1,9 @@
 <h1 align="center">Spectra</h1>
 
 <p align="center">
-  <b>Find out which file, which function and which component makes your frontend slow, automatically.</b>
+  <b>Make your web app faster. Ask your AI agent, or run one command.</b>
   <br>
-  <sub>React · Next.js · Vue · Angular · Svelte · any web frontend &nbsp;|&nbsp; CLI · dashboard · VS Code · AI agents · CI</sub>
+  <sub>React · Next.js · Vue · Angular · Svelte · any web frontend &nbsp;|&nbsp; Claude Code · Cursor · Copilot · Codex · Gemini · VS Code · CI</sub>
 </p>
 
 <p align="center">
@@ -14,351 +14,173 @@
 </p>
 
 <p align="center">
-  <a href="https://progen-labs.github.io/website/#spectra/docs/introduction"><b>Documentation</b></a>
+  <a href="https://progen-labs.github.io/website/#spectra/docs/improve"><b>Documentation</b></a>
   &nbsp;·&nbsp;
   <a href="https://progen-labs.github.io/website/#spectra/demo"><b>2½-minute demo</b></a>
   &nbsp;·&nbsp;
-  <a href="#install">Install</a>
+  <a href="#get-started">Get started</a>
   &nbsp;·&nbsp;
-  <a href="https://marketplace.visualstudio.com/items?itemName=progen-labs.spectra-performance">VS Code</a>
+  <a href="#measure-without-changing-anything">Measure only</a>
   &nbsp;·&nbsp;
   <a href="#project-health">Project health</a>
 </p>
 
-Spectra is a CLI and dashboard that profiles a frontend build through the Chrome DevTools Protocol
-(tracing + CPU sampling) plus a small in-page probe for component re-renders and Web Vitals. Run one
-command and it starts your dev server, auto-discovers the actionable elements on the page, drives a set
-of **golden-path journeys**, records each one, and reports a ranked list of culprits — each with the
-exact function, file and line, the evidence, and a suggested fix.
+Spectra runs your app in Chrome, measures it, and finds the problems in **your own code**: the exact file, function,
+line and component, with a suggested fix. Then it has each problem fixed, measures the change, and keeps only what
+measurably helped. It works with the AI coding agent you already use, or on its own. Everything runs on your
+machine: no account, no telemetry, no uploads. A [Progen Labs](https://github.com/progen-labs) project, free and
+open source.
 
-Deep component-level attribution for **React, Next.js, Vue and Angular** (component names, render counts
-and per-component render/change-detection time; source files too, where the framework exposes them). For
-**Svelte and any other build**, a source-mapped generic profile still pinpoints the slow files and
-functions. The framework is detected in the page itself, so it is right wherever you start Spectra from.
-Apps behind a login work too: Spectra [signs in first](#behind-a-login), with every kind of login. A
-[Progen Labs](https://github.com/progen-labs) project — independent, open source, no telemetry, no account
-required.
+## Get started
 
-## Install
+**1. Install.** Node.js 22.12 or newer and a local Chrome, Chromium or Edge (Spectra drives the browser you have).
 
 ```bash
 npm install --save-dev @progen-labs/spectra
+npx spectra
 ```
 
-Requirements: **Node 22.12+** and a local **Chrome / Chromium / Edge** (Spectra drives your installed
-browser; it does not download one). If it can't find Chrome, set `CHROME_PATH` to the executable.
+`npx spectra` sets things up: it teaches your AI coding agent what Spectra does, in the file the agent reads for
+your project (`AGENTS.md`, a Claude Code skill, Copilot instructions, a Cursor rule…). Nothing happens at install time.
 
-## Quick start
+**2. Ask your agent.** In Claude Code, Cursor, GitHub Copilot, Codex, Gemini CLI, Windsurf or any other coding agent,
+in plain words:
 
-From the root of your project:
+> improve the performance
+
+The agent runs Spectra's loop. Spectra measures the app and names the first problem: file, line, cost, suggested fix.
+The agent makes that one change. Spectra runs your checks, measures again, and says **keep** or **undo**. Repeat.
+Then the agent tells you what got faster, with the before → after numbers, and what it tried that didn't help.
+
+Or let Spectra do the whole thing unattended, with a coding agent installed on your machine:
 
 ```bash
-npx spectra performance
+npx spectra improve
 ```
 
-With no `--url`, Spectra:
+It finds the agent (Claude Code, Codex, Gemini CLI, Copilot CLI, Cursor, OpenCode or Amp; `--agent` to choose),
+works in a copy of your last commit, and puts the kept fixes on a branch, one commit each, with the measurements in
+the commit messages. Your own files are never touched.
 
-1. detects your framework and starts your dev server (`npm run dev`/`start`/`serve`),
-2. records a baseline page load,
-3. auto-discovers the actionable elements (links, buttons, inputs, forms),
-4. synthesizes and runs **golden-path journeys** — safely (see below),
-5. prints a performance matrix and saves a report per journey, then stops the server.
+**3. Review.** The changes are in your working tree (`git diff`) or on the branch (`git log -p HEAD..spectra/improve-…`).
+Commit, or merge, and you're done.
+
+## What a session looks like
+
+The guided loop on Spectra's React demo app. Each step is one short command, so any agent can drive it:
+
+```
+$ npx spectra improve next
+spectra: measuring the baseline (3 page loads) …
+Problem 1 of 5: Row is slow to render: 1442ms total, 0.2ms per render (7200×)
+  Where: src/Row.jsx:3
+  Cost: about 1.44 s, seen in 3 runs
+  Where the time went:
+    Row() in src/Row.jsx:3: 1.44 s (slow render)
+  Suggested fix: Move expensive calculations into useMemo, virtualise long lists, …
+
+Make ONE focused change in src/Row.jsx that removes or reduces this cost, keeping the behaviour exactly the same …
+Then run:  npx spectra improve check
+
+$ npx spectra improve check            # after the agent's change
+spectra: running the checks (npm test) …
+spectra: measuring the change …
+✓ Kept: JavaScript CPU time: 1.55 s → 162 ms (−90%)
+  also Row (src/Row.jsx) — render time: 1.44 s → 35.4 ms (−98%)
+  Checks passed: npm test.
+  Keep this change.
+
+Problem 2 of 4: App rendered 60× (19/s)
+  Where: src/main.jsx:15
+  …
+
+$ npx spectra improve check            # after a change that did nothing
+✗ Undo this change: no measurable improvement: every change was within run-to-run noise.
+  Revert the files you changed for this problem (and only those), then continue.
+
+$ npx spectra improve report
+Spectra improve — 1 of 2 problems fixed
+  ✓ fixed       Row is slow to render … (src/Row.jsx:3): JavaScript CPU time: 1.55 s → 162 ms (−90%)
+  ✗ undone      App rendered 60× (19/s) (src/main.jsx:15) — no measurable improvement
+Overall, before → after: IMPROVED (confidence: medium)
+  ✓ JavaScript CPU time: 1.55 s → 162 ms (−90%)
+  ✓ Row (src/Row.jsx) — render time: 1.44 s → 35.4 ms (−98%)
+```
+
+## How it decides
+
+Spectra makes every decision; the agent only edits.
+
+- **Measured, not guessed.** Three page loads before and after each change, reduced to medians. A change counts
+  only when it is bigger than the run-to-run noise, so a lucky run never decides.
+- **Your checks first.** Your `test`, type-check and `build` scripts (or `--check "<cmd>"`) must pass after every
+  change. A faster page that breaks is undone.
+- **Your code only.** Problems in `node_modules` are reported, not fixed. A new critical problem in your own code
+  undoes a change; a vendor chunk renamed between builds does not.
+- **One change at a time, in order of cost.** A fix that also clears other problems skips them.
+- **Unattended, in isolation.** A git worktree of your last commit with its own dev server; changes to
+  `package.json`, lockfiles, configuration, tests or CI, deletions, or more than 150 lines are refused; nothing is
+  pushed or merged.
+
+The rules are Spectra's code, checked by a [test bench](https://progen-labs.github.io/website/#spectra/docs/harness-bench)
+in CI: a real fix must be kept, a "faster" page that renders nothing must be caught, a cosmetic change must not count.
+See [How improve decides](https://progen-labs.github.io/website/#spectra/docs/harness).
+
+## What it works with
+
+| | |
+| --- | --- |
+| **Frameworks** | Component names, render counts and timings for **React, Next.js, Vue and Angular**; source-mapped files and functions for **Svelte, SolidJS and any other build**. Detected in the page itself. |
+| **AI agents** | Any agent that reads `AGENTS.md` (Codex, Copilot's coding agent, Cursor, Windsurf, Zed, Jules, Amp…), plus Claude Code (a skill), GitHub Copilot (instructions), Cursor, Windsurf, Cline, Roo Code and Gemini CLI, each in its own file. MCP clients get the loop as tools (`improve_next`, `improve_check`, `improve_report`); there is a [Claude Code plugin](https://progen-labs.github.io/website/#spectra/docs/claude-code). |
+| **Unattended** | Claude Code, Codex CLI, Gemini CLI, GitHub Copilot CLI, Cursor CLI, OpenCode, Amp, or any command of yours. |
+| **Editors** | The [VS Code extension](https://marketplace.visualstudio.com/items?itemName=progen-labs.spectra-performance) shows each finding at its line and render counts above components. |
+| **CI** | The [GitHub Action](https://progen-labs.github.io/website/#spectra/docs/github-action) profiles every pull request against its base commit and enforces your budgets. |
+| **Apps behind a login** | Spectra [signs in first](https://progen-labs.github.io/website/#spectra/docs/signing-in): a login form (one or two steps, single sign-on, authenticator codes), you in the browser window, the browser prompt, a token or cookie, or a sign-in link. Secrets stay in memory. |
+
+## Measure without changing anything
+
+```bash
+npx spectra performance                  # starts your dev server, finds the page's buttons, links and
+                                         # forms, runs safe user journeys through them, reports each one
+npx spectra performance --quick --runs 3 # one page, three loads, medians: the fast loop
+npx spectra dashboard --open             # the visual dashboard: culprits, page map, call trees, PDFs
+```
 
 ```
 #  Golden path            Result    TBT    LCP  LongT  Top finding
 —  Initial page load      PASS      0ms  128ms      0  [warning] main chunk served uncompressed
 1  Click "Pricing"        PASS      0ms      —      0  [warning] Large DOM: 2,139 nodes
 2  Click "Folders"        PASS      0ms      —      0  [critical] TreeNode re-rendered 1100× (96% wasted)
-...
 Automation: 8/8 golden paths passed.
-```
-
-Then open the visual dashboard — ranked culprits, component re-renders, long tasks, the golden-path matrix,
-**PDF export** and **commit-to-commit compare**:
-
-```bash
-npx spectra dashboard --open
 ```
 
 ![The Spectra dashboard: the top culprit of a recording, burn() in src/heavy.js, with its time and a suggested fix](docs/dashboard.webp)
 
-A [tour of the dashboard](https://progen-labs.github.io/website/#spectra/docs/dashboard), with every part
-labelled, is in the docs.
+Prove a change yourself with `npx spectra performance --quick --runs 5 --out before.json`, the same with `after.json`,
+then `npx spectra compare before.json after.json`. Put limits in `spectra.config.json` and every run becomes a CI gate
+(exit code 2 when over budget). `--json` prints a versioned result for scripts and editors. See
+[Measure a page](https://progen-labs.github.io/website/#spectra/docs/cli-performance),
+[Compare](https://progen-labs.github.io/website/#spectra/docs/compare),
+[Budgets and CI](https://progen-labs.github.io/website/#spectra/docs/budgets) and
+[JSON output](https://progen-labs.github.io/website/#spectra/docs/json-output).
 
 ## Commands
 
 ```
-spectra performance [options]            Golden-path evaluation (default)
-spectra performance --quick              One page-load profile (about 15 s)
-spectra compare <before> <after>         Did it get faster? Noise-aware before/after
-spectra reports                          List saved reports
-spectra mcp [--project <dir>]            MCP server for AI tools (stdio)
-spectra dashboard [--port N] [--open]    Open the dashboard UI
-spectra fix [options]                    The AI fix harness (spectra fix --help)
-spectra agents [--remove]                Teach your AI agents what Spectra does
-spectra --help                           Full option list
-spectra --version
+spectra improve [options]               Make the app faster, unattended (spectra improve --help)
+spectra improve next|check|report|stop  The same, step by step, for your AI agent or you
+spectra performance [options]           Measure only: golden-path journeys, or --quick
+spectra compare <before> <after>        Did it get faster? Beyond run-to-run noise
+spectra reports                         List saved reports
+spectra dashboard [--open]              The dashboard UI
+spectra mcp [--project <dir>]           MCP server for AI tools (stdio)
+spectra agents [--remove]               Teach your AI agents what Spectra does
+spectra --help                          Every option
 ```
 
-**`performance` options**
-
-| Option | Description |
-| --- | --- |
-| `--url <page>` | Evaluate an already-running page; skips self-boot |
-| `--paths <n>` | Max golden paths to run (default 12) |
-| `--command "<cmd>"` | Override the dev-server command |
-| `--boot-timeout <s>` | How long to wait for the dev server (default 60) |
-| `--headed` | Show the browser window |
-| `--login-url <url>`, `--login-user <name>` | Sign in first: the login page and the username; the password comes from `SPECTRA_LOGIN_PASSWORD` (see [Behind a login](#behind-a-login)) |
-| `--login <method>` | `form`, `link`, `http`, `token` or `manual` (you sign in in the Chrome window); guessed when left out |
-| `--quick` | One page-load profile instead of the golden-path suite: the fast loop |
-| `--runs <n>` | Record n times and report the median (with `--quick` or `--mode`) |
-| `--mode live\|load` | Classic single-page profile instead of the golden-path suite |
-| `--json` | Print a machine-readable result on stdout (tables go to stderr) |
-| `--out <file>` | Also write that result to a file (an input for `compare`) |
-| `--config <file>` | Budgets and sign-in file (default: `spectra.config.json` in your project) |
-
-## Behind a login
-
-Most production frontends sit behind a login, and the Chrome Spectra launches starts signed out. Tell
-Spectra how your app signs in and it signs in before it records, so the login never shows up in a
-measurement:
-
-| Method | For |
-| --- | --- |
-| **Login form** (`form`) | A username and password on your app's login page or its identity provider (OAuth, OpenID Connect, SAML): one or two steps, forms that render late, in iframes or web components, behind a "Sign in" button, with **authenticator codes** from a TOTP secret |
-| **I'll sign in myself** (`manual`) | SMS or email codes, push approvals, passkeys, CAPTCHAs: Chrome opens on the login page and Spectra waits for you |
-| **Browser prompt** (`http`) | HTTP Basic or Digest, common on staging servers |
-| **Token or cookie** (`token`) | A header (sent only to your app's origin), cookies or localStorage entries |
-| **Sign-in link** (`link`) | A URL that signs in by itself, such as a dev-only auto-login |
-
-In the dashboard, turn on **My app needs a sign-in** under **Page to profile**. On the command line:
-
-```bash
-SPECTRA_LOGIN_PASSWORD="$TEST_PASSWORD" npx spectra performance --login-url http://localhost:3000/login --login-user demo@example.com
-npx spectra performance --login manual --login-url https://staging.example.com/login
-```
-
-Or once, for every command, the VS Code extension, the MCP server and `spectra fix`, in `spectra.config.json`:
-
-```json
-{ "signIn": { "method": "form", "url": "http://localhost:3000/login", "username": "demo@example.com" } }
-```
-
-Secrets come only from the dashboard or the environment (`SPECTRA_LOGIN_PASSWORD`, `SPECTRA_LOGIN_TOTP_SECRET`,
-`SPECTRA_LOGIN_HEADER`, `SPECTRA_LOGIN_COOKIES`, `SPECTRA_LOGIN_STORAGE`). They stay in memory: never written
-to disk, a report, a log or an error message, and `spectra.config.json` refuses them. Spectra never solves
-CAPTCHAs. Use a test account where you can. See
-[Signing in](https://progen-labs.github.io/website/#spectra/docs/signing-in), with a short video.
-
-## Measure, change, verify
-
-Performance numbers are noisy, so Spectra never trusts a single recording when you ask it whether a change
-helped. Record a few runs before and after, then compare:
-
-```bash
-npx spectra performance --quick --runs 5 --out before.json
-# …make your change…
-npx spectra performance --quick --runs 5 --out after.json
-npx spectra compare before.json after.json
-```
-
-```
-Spectra compare — IMPROVED (confidence: medium)
-  ✓ JavaScript CPU time: 1.52 s → 92.1 ms (−94%)
-  ✓ Row (src/Row.jsx) — render time: 1.44 s → 7.4 ms (−99%)
-
-Findings: 3 resolved · 2 new · 10 still present
-  resolved  [critical] Row is slow to render: 1444ms total, 0.2ms per render (7200×)
-```
-
-Each side is reduced to its median, and a difference only counts when it is larger than the run-to-run
-spread. A side can be a `--out` result file, a report id from `spectra reports`, a report file, or several
-ids joined by commas.
-
-## Budgets and CI
-
-Put limits in `spectra.config.json` at your project root:
-
-```json
-{
-  "$schema": "./node_modules/@progen-labs/spectra/schema/config.schema.json",
-  "budgets": { "tbtMs": 200, "lcpMs": 2500, "cls": 0.1, "criticalFindings": 0 }
-}
-```
-
-Every `spectra performance` run checks them: the median for `--quick`/`--mode`, every journey for the
-golden-path suite. Metrics a recording did not measure are skipped, never failed. Available budgets:
-`tbtMs`, `lcpMs`, `fcpMs`, `cls`, `inpMs`, `ttfbMs`, `longTaskCount`, `maxLongTaskMs`, `scriptingMs`,
-`forcedLayoutCount`, `domNodes`, `heapUsedMb`, `transferKb`, `criticalFindings`, `findingCount`.
-
-Exit codes make it a CI gate:
-
-| Code | Meaning |
-| --- | --- |
-| `0` | Done, and within budget |
-| `1` | Could not run (no Chrome, server down, bad config) |
-| `2` | Ran, but a budget was exceeded, or `compare --fail-on-regression` found a regression |
-
-### GitHub Action
-
-The repository is also a GitHub Action. On every pull request it profiles the change and its base commit on the
-same runner, compares them beyond run-to-run noise, enforces your budgets, and writes the result to the job summary
-and (optionally) a PR comment:
-
-```yaml
-name: Performance
-on: pull_request
-permissions:
-  contents: read
-  pull-requests: write   # only for comment: true
-jobs:
-  spectra:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with: { node-version: 22 }
-      - run: npm ci
-      - uses: progen-labs/spectra@v1
-        with:
-          compare-to-base: true
-          fail-on-regression: true
-          comment: true
-```
-
-Inputs include `url`, `command`, `mode` (`quick` or `golden-paths`), `runs`, `config`, `fail-on-budget` and
-`working-directory`; outputs are `result-file`, `verdict`, `over-budget` and `summary-file`. Full reports are
-uploaded as an artifact. See the [Action guide](https://progen-labs.github.io/website/#spectra/docs/github-action).
-
-## Machine-readable output
-
-`--json` prints a small, versioned result on stdout and sends every human-readable line to stderr, so it can
-be piped into `jq`, an editor or an AI agent. Each result has `schemaVersion` and a `kind` (`profile`,
-`evaluation`, `compare` or `reports`) and points at the full reports on disk rather than embedding them.
-Findings carry the file, line, cost in ms and a suggested fix. The format is described by a JSON Schema
-shipped with the package (`schema/result.schema.json`); additive changes keep `schemaVersion`, breaking
-changes bump it. Saved reports carry their own `schemaVersion` too.
-
-## Use it from your AI assistant
-
-**Your agent already knows Spectra.** The first time Spectra runs in your project, it writes its knowledge doc (what
-it does, which command answers which request, how to read the results, how to prove a change helped) where your AI
-coding agent reads its project instructions. So you can ask in plain words, *"why is checkout slow?"*, *"did my change make it faster?"*,
-and the agent runs Spectra for you:
-
-| Agent | File |
-| --- | --- |
-| Codex, GitHub Copilot's coding agent, Cursor, Windsurf, Zed, Jules, Amp and any other agent that reads `AGENTS.md` | a Spectra block in `AGENTS.md` (always) |
-| Claude Code | `.claude/skills/spectra/SKILL.md`, and a short note in `CLAUDE.md` |
-| GitHub Copilot (VS Code, Visual Studio, JetBrains) | `.github/instructions/spectra.instructions.md` |
-| Cursor · Windsurf · Cline · Roo Code · Gemini CLI | `.cursor/rules/spectra.mdc` · `.windsurf/rules/spectra.md` · `.clinerules/spectra.md` · `.roo/rules/spectra.md` · `GEMINI.md` |
-
-Beyond `AGENTS.md`, it writes for the agents your project or machine uses, only between its own markers, so your
-own text is never touched. There is no install script: it happens on the first `spectra` command (never in CI or
-under `npx` without an install), and `npx spectra agents` does it any time (`--all`, `--only claude,copilot`,
-`--list`, `--print`). `npx spectra agents --remove` takes it all out, and
-`"agentDocs": false` in `spectra.config.json` (or `SPECTRA_AGENT_DOCS=0`) keeps it off. See
-[Any AI agent](https://progen-labs.github.io/website/#spectra/docs/agents).
-
-Spectra is an [MCP](https://modelcontextprotocol.io) server too, so an AI coding assistant can profile a page,
-fix what it finds, and prove each fix with before/after measurements.
-
-**Claude Code**, with the plugin (adds an *improve-performance* skill and `/spectra:audit`):
-
-```
-/plugin marketplace add progen-labs/spectra
-/plugin install spectra@progen-labs
-```
-
-**Any MCP client** (Claude Code without the plugin, Claude Desktop, Cursor, VS Code, Windsurf…): run
-`npx -y @progen-labs/spectra mcp` as a stdio server (Spectra 0.3.0 or later). For example:
-
-```bash
-claude mcp add spectra -- npx -y @progen-labs/spectra mcp
-```
-
-```json
-{ "mcpServers": { "spectra": { "command": "npx", "args": ["-y", "@progen-labs/spectra", "mcp", "--project", "/path/to/your/app"] } } }
-```
-
-Tools: `profile_page`, `verify_change` (re-profile and compare against a baseline), `compare_profiles`,
-`run_golden_paths`, `list_reports` and `get_report`. The server profiles pages on this machine only (start it with
-`--allow-remote` to lift that), runs one browser at a time, and stops Chrome and any dev server it started when a
-call is cancelled. See the [MCP guide](https://progen-labs.github.io/website/#spectra/docs/mcp-server).
-
-## The AI fix harness
-
-`spectra fix` hands the costliest findings in your own code to a coding agent, one at a time, and keeps a change only
-when your checks still pass and Spectra measures the page faster beyond run-to-run noise. Kept changes arrive as
-commits on a new branch, `spectra/fix-<time>`, for you to review; everything else is undone.
-
-```bash
-npx spectra fix                       # Claude Code (signed in) fixes up to 3 findings
-npx spectra fix --check "npm run e2e" --max-fixes 5
-npx spectra fix --agent "./my-agent.sh"   # any agent: instructions on stdin
-```
-
-The harness, not the agent, makes every decision:
-
-- **Isolation.** It works in a git worktree of your last commit, with its own dev server. Your working tree is never
-  touched, and nothing is pushed or merged.
-- **Your checks first.** Your test, type-check and build scripts (or `--check`, which can test the running app at
-  `$SPECTRA_FIX_URL`) must pass before any change and after each one. A faster page that breaks is undone.
-- **Scope rules.** A change may not touch `package.json`, lockfiles, configuration, tests or CI, delete files, or
-  exceed 150 lines.
-- **Proof.** The change is kept only if `spectra compare` says *improved* with medium or high confidence and no new
-  critical finding; with low confidence it measures again.
-- **A record.** Each kept commit carries its evidence; `.spectra/fix/<time>/report.md` summarises the session, and a
-  history skips findings that failed before. A finding that an earlier kept fix already cleared is skipped too.
-
-By default the agent is Claude Code in headless mode, allowed only to read and edit files (no shell, no web, no MCP),
-with a spending cap per finding. A test bench (`npm run bench`) checks the harness's decisions in CI: a real fix is
-kept, a "faster" change that breaks the page is caught, a cosmetic change doesn't count, and an edit to
-`package.json` is refused. With Claude Code on the demo app, it kept two of three fixes and cut JavaScript CPU time
-from 1.51 s to 82.5 ms (−95%) for $0.44. See [the AI fix harness](https://progen-labs.github.io/website/#spectra/docs/harness).
-
-## In VS Code
-
-The Spectra extension (`vscode/`) puts results where you work: every finding in the **Problems panel** at the file
-and line responsible, **CodeLens** above the costliest components and functions
-(`⚡ Spectra: Row · 7,200 renders · 1.44 s rendering`), headline numbers in the **status bar**, **Verify against
-baseline** after a change, golden paths, and the dashboard inside the editor. Results that the CLI or an AI
-assistant writes to `.spectra/results` appear automatically, and on VS Code 1.101+ it offers Spectra's MCP server to
-agent mode. It runs your project's Spectra (0.2.0 or later) or `npx`.
-
-Install **Spectra — frontend performance** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=progen-labs.spectra-performance), or from a terminal:
-
-```bash
-code --install-extension progen-labs.spectra-performance
-```
-
-For Cursor, Windsurf or VSCodium (Open VSX), until it is listed there: `cd vscode && npx @vscode/vsce package
---no-dependencies`, then install `spectra-performance-0.1.0.vsix` with **Extensions: Install from VSIX…**.
-
-See the [VS Code guide](https://progen-labs.github.io/website/#spectra/docs/vscode).
-
-## Safe by default
-
-Auto-exploration never triggers destructive actions. Spectra detects controls that would mutate state —
-anything labelled delete / pay / checkout / log out, logout links, and `POST`/`PUT`/`DELETE` form submits —
-and **skips** them unless you explicitly allow them. Form fields are filled with synthetic values; GET
-searches and navigations are fair game. If a session expires and the app sends Spectra back to its login page,
-Spectra signs in again.
-
-## Where results go
-
-Reports are written to `.spectra/reports/` in your project (add it to `.gitignore`). Each golden path is a
-full report you can open in `spectra dashboard`, export to PDF, or compare against another commit.
-
-## How it works
-
-Spectra launches Chrome via `puppeteer-core`, records a CDP trace + CPU profile, and injects a probe that
-tracks component renders, slow interactions and Web Vitals. It maps sampled frames back to your source
-through source maps (and bundler markers as a fallback), then ranks the files, functions and components
-that cost the most main-thread time. See the
-[deep-dive docs](https://github.com/progen-labs/spectra/blob/main/DOCS.md) for how capture, correlation
-and report generation work.
+Everything Spectra does runs on your machine, in a separate Chrome profile, on a development build (production
+builds hide component timings). Reports go to `.spectra/` in your project; keep it out of git. Automatic exploration
+never clicks delete, pay or log out, and never submits a form that changes data.
 
 ## Project health
 
@@ -373,41 +195,22 @@ and report generation work.
   <a href="https://www.npmjs.com/package/@progen-labs/spectra?activeTab=code"><img alt="unpacked size" src="https://img.shields.io/npm/unpacked-size/@progen-labs/spectra?style=flat-square&label=unpacked&color=0a84ff"></a>
 </p>
 
-Every pull request and every push to `main` runs the same checks, and **spectra-bot** comments on each pull request
-with all of their results in one place, updated on every push:
-
-- **tests**: the test suite on Node 22 and 26 (Linux, the oldest and newest supported) and Node 24 (macOS), with a
-  minimum test coverage, and the VS Code extension's tests. The packed npm package is also installed and run on Linux
-  (Node 22) and Windows.
-- **lint**: ESLint, for undefined names, unused code and broken React hooks.
-- **npm audit**: the dependencies Spectra installs, on `main` and weekly, so new advisories show up. On pull
-  requests, GitHub's dependency review checks what the change adds.
-- **snyk**: [Snyk](https://snyk.io)'s test of the same dependencies on `main` when they change, and weekly, with
-  findings in the [Security tab](https://github.com/progen-labs/spectra/security). Snyk's own app checks pull requests.
-- **Socket**: [Socket](https://socket.dev)'s supply-chain score for the npm package; its GitHub app reviews every pull
-  request that changes dependencies.
-- **size budget**: the npm package, the install with its dependencies and the dashboard bundle, against budgets,
-  compared with `main` on pull requests.
-- **OpenSSF Scorecard**: how well the repository follows open-source security practices.
-- Also on every change: a check of every link in the docs, the AI fix harness's test bench, the GitHub Action on the
-  demo app, and CodeQL code scanning.
-
-Releases are published from GitHub Actions, after every check and a maintainer's approval, with
-[npm provenance](https://docs.npmjs.com/generating-provenance-statements) and signed build attestations, and each
-GitHub Release carries the package and its SBOM. Every action is pinned to a commit, and CI installs from the
-committed lockfile. See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
-
-Report security issues privately: see [SECURITY.md](SECURITY.md).
+Every pull request and push to `main` runs the same checks, and **spectra-bot** reports them in one comment on each
+pull request: the tests on Node 22, 24 and 26 across Linux, macOS and Windows with a coverage floor, lint, `npm audit`
+and Snyk, Socket's supply-chain score, size budgets, the links in the docs, the improve bench, the GitHub Action on the
+demo app, CodeQL and the OpenSSF Scorecard. Every action is pinned to a commit, and CI installs from the committed
+lockfile. Releases carry a changelog, the package, its SBOM and signed build attestations. See
+[CONTRIBUTING.md](CONTRIBUTING.md), [CHANGELOG.md](CHANGELOG.md) and, for security issues, [SECURITY.md](SECURITY.md).
 
 ## Documentation
 
-- **[The guide](https://progen-labs.github.io/website/#spectra/docs/introduction)**: every feature, with
-  annotated screenshots. Start with
-  [Quick start](https://progen-labs.github.io/website/#spectra/docs/quick-start),
-  [Compare before and after](https://progen-labs.github.io/website/#spectra/docs/compare),
+- **[The guide](https://progen-labs.github.io/website/#spectra/docs/improve)**: start with
+  [Improve the performance](https://progen-labs.github.io/website/#spectra/docs/improve) and
+  [Your AI agent](https://progen-labs.github.io/website/#spectra/docs/agents); then
+  [Measure a page](https://progen-labs.github.io/website/#spectra/docs/cli-performance),
   [Budgets and CI](https://progen-labs.github.io/website/#spectra/docs/budgets),
-  [JSON output](https://progen-labs.github.io/website/#spectra/docs/json-output),
-  [Claude Code](https://progen-labs.github.io/website/#spectra/docs/claude-code), the
+  [MCP server](https://progen-labs.github.io/website/#spectra/docs/mcp-server),
+  [How improve decides](https://progen-labs.github.io/website/#spectra/docs/harness), the
   [Findings reference](https://progen-labs.github.io/website/#spectra/docs/findings) and
   [Troubleshooting](https://progen-labs.github.io/website/#spectra/docs/troubleshooting).
 - **[DOCS.md](DOCS.md)**: the in-repo manual, the technical deep dive, and how to contribute.

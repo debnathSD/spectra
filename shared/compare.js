@@ -628,9 +628,22 @@ export function findingKey(f) {
     f.id.startsWith('large-') ||
     f.id.startsWith('slow-request-')
   ) {
-    return `${f.id.replace(/-\d+$/, '')}:${f.detail || f.title}`;
+    // the same resource, whatever hash the bundler put in its name this time
+    return `${f.id.replace(/-\d+$/, '')}:${resourceName(f.detail || f.title)}`;
   }
   return f.id;
+}
+
+/**
+ * A resource's name without the parts that change on every build: the content
+ * hash (react-dom-hmN8LOy-.js, main.3f9a1c2b.js, 123.chunk.js) and the query
+ * string (?v=…), so two builds' chunks match.
+ */
+export function resourceName(text) {
+  return String(text)
+    .replace(/\?[^\s)]*/g, '')
+    .replace(/[-.][A-Za-z0-9_-]{6,}(?=\.(?:m?js|css)\b)/g, '')
+    .replace(/(^|\/)\d+(?=\.(?:chunk\.)?(?:m?js|css)\b)/g, '$1chunk');
 }
 
 /** A finding "exists" on a side when it appears in at least half of that side's runs. */
