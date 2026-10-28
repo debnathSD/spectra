@@ -4,7 +4,7 @@ Every release of Spectra, newest first. Versions follow [semantic versioning](ht
 
 Update an existing install with `npm install --save-dev @progen-labs/spectra@latest`, and check yours with `npx spectra --version`.
 
-## 0.7.0 (25 October 2026)
+## 0.7.0 (28 October 2026)
 
 **Ask your AI agent to "improve the performance", and Spectra does the rest.** Spectra's main command is now `spectra improve`: it measures the app, finds the problems in your own code, has each one fixed, measures the change, and keeps only what measurably helped. Everything else Spectra can do is still there, behind it.
 
@@ -15,6 +15,8 @@ Update an existing install with `npm install --save-dev @progen-labs/spectra@lat
 - **Docs for the simple path first.** The README and the website lead with install, ask, review; the command reference, budgets, CI, MCP, the dashboard and the rest follow.
 
 ## 0.6.1 (22 October 2026)
+
+Not published on npm on its own: these changes ship in 0.7.0.
 
 - **Node.js 22.12 or newer.** Spectra's Chrome driver, puppeteer-core, needs it, so `engines` in `package.json` now says so instead of Node 18, and every release is installed and run on it in CI. Node 20 reached its end of life in April 2026.
 - **No install script.** Spectra's knowledge doc for AI agents is now written the first time Spectra runs in your project, instead of during `npm install`, so package managers and supply-chain scanners such as Socket have no install script to flag. It works the same with npm, pnpm, Yarn and Bun, once per version, and never comes back after `npx spectra agents --remove`. See [Any AI agent](https://progen-labs.github.io/website/#spectra/docs/agents).

@@ -523,9 +523,9 @@ regular CLI with `--json` in the project, so its numbers are identical to a run 
 
 `plugins/spectra/` is a Claude Code plugin, listed by the marketplace in `.claude-plugin/marketplace.json` at the
 repository root (`/plugin marketplace add progen-labs/spectra`, then `/plugin install spectra@progen-labs`). It
-holds `.claude-plugin/plugin.json`, a `.mcp.json` that starts `npx -y @progen-labs/spectra@>=0.3.0 mcp --project
-${CLAUDE_PROJECT_DIR}`, and two skills: `improve-performance` (the measure → change → `verify_change` loop, which
-Claude uses on its own when asked to make something faster) and `audit` (`/spectra:audit`, a report without code
+holds `.claude-plugin/plugin.json`, a `.mcp.json` that starts `npx -y @progen-labs/spectra@>=0.7.0 mcp --project
+${CLAUDE_PROJECT_DIR}` (0.7.0 for the `improve_*` tools), and two skills: `improve-performance` (the
+`improve_next` → change → `improve_check` loop, which Claude uses on its own when asked to make something faster) and `audit` (`/spectra:audit`, a report without code
 changes). Keep `plugin.json`'s `version` equal to the package version, and check changes with
 `claude plugin validate --strict ./plugins/spectra` and `claude plugin validate --strict .`.
 

@@ -2,7 +2,7 @@
   "mcpServers": {
     "spectra": {
       "command": "npx",
-      "args": ["-y", "@progen-labs/spectra@>=0.3.0", "mcp", "--project", "${CLAUDE_PROJECT_DIR}"]
+      "args": ["-y", "@progen-labs/spectra@>=0.7.0", "mcp", "--project", "${CLAUDE_PROJECT_DIR}"]
     }
   }
 }
