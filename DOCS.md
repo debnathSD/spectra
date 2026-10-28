@@ -1087,6 +1087,9 @@ reports/  .spectra/        generated data (git-ignored)
 ```
 
 - `npm test` runs the analysis, comparison, result, CLI, MCP and Action tests (`node --test`, test files named `test-*.js`).
+  `server/test-properties.js` adds property-based tests ([fast-check](https://fast-check.dev)): the rules that decide
+  what improve keeps, the noise rule, chunk names, argument parsing and the values Spectra writes into page scripts,
+  each checked against hundreds of generated inputs.
   The CLI and MCP tests drive `bin/spectra.js` against synthetic reports, so they need no Chrome; the MCP tests
   include a conformance check with the official MCP SDK client.
 - The tool is plain JS/JSX with its own dependencies (`npm install` in this folder only). `npm run build` produces the

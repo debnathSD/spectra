@@ -12,7 +12,7 @@ const ms = v => {
   return `${v.toFixed(1)} ms`;
 };
 const count = v => (v == null ? '—' : Math.round(v).toLocaleString('en-US'));
-const esc = s => String(s ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+const esc = s => String(s ?? '').replace(/[\\|]/g, '\\$&').replace(/\r?\n/g, ' ');
 const where = f => (f.file ? `\`${f.file}${f.line ? `:${f.line}` : ''}\`` : '—');
 const byUnit = (unit, v) => (unit === 'ms' ? ms(v) : unit === 'KB' ? `${count(v)} KB` : unit === 'MB' ? `${v} MB` : unit === 'count' ? count(v) : String(v));
 const SEV = { critical: '🔴 critical', warning: '🟠 warning', info: '🔵 note' };

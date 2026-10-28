@@ -137,7 +137,7 @@ if (!agentArg || agentArg === 'replay') {
     '',
     '| Case | Expected | Got | |',
     '| --- | --- | --- | --- |',
-    ...results.map(r => `| ${r.case} | ${r.expected} | ${r.got} | ${r.ok ? '✅' : '❌'} ${(r.headline || r.reason || '').replace(/\|/g, '\\|')} |`),
+    ...results.map(r => `| ${r.case} | ${r.expected} | ${r.got} | ${r.ok ? '✅' : '❌'} ${(r.headline || r.reason || '').replace(/[\\|]/g, '\\$&')} |`),
   ].join('\n');
   if (process.env.SPECTRA_BENCH_MD) fs.writeFileSync(process.env.SPECTRA_BENCH_MD, `${md}\n`);
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Fix harness test bench\n\n${md}\n`);

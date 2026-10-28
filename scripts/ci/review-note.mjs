@@ -16,7 +16,7 @@ const pkg = c => `\`${c.name}@${c.version}\`${c.manifest ? ` (${c.manifest})` : 
 const lines = [];
 for (const c of vulnerable)
   for (const v of c.vulnerabilities || [])
-    lines.push(`- ${pkg(c)}: **${v.severity}** [${v.advisory_ghsa_id}](${v.advisory_url}) ${String(v.advisory_summary || '').replace(/\|/g, '\\|')}`);
+    lines.push(`- ${pkg(c)}: **${v.severity}** [${v.advisory_ghsa_id}](${v.advisory_url}) ${String(v.advisory_summary || '').replace(/[\\|]/g, '\\$&')}`);
 for (const [kind, list] of Object.entries(licenses || {}))
   for (const c of list || []) lines.push(`- ${pkg(c)}: license ${kind} (${c.license || 'none found'})`);
 for (const c of denied) lines.push(`- ${pkg(c)}: denied by the repository's dependency policy`);

@@ -28,7 +28,7 @@ export function reportMarkdown(s) {
   if (s.attempts.length) {
     lines.push('| Finding | Where | Outcome | Why |', '| --- | --- | --- | --- |');
     for (const a of s.attempts)
-      lines.push(`| ${a.finding.title.replace(/\|/g, '\\|')} | \`${a.finding.file}${a.finding.line ? `:${a.finding.line}` : ''}\` | ${OUTCOME[a.outcome] || a.outcome}${a.commit ? ` (${a.commit})` : ''} | ${(a.reason || '').replace(/\|/g, '\\|')} |`);
+      lines.push(`| ${a.finding.title.replace(/[\\|]/g, '\\$&')} | \`${a.finding.file}${a.finding.line ? `:${a.finding.line}` : ''}\` | ${OUTCOME[a.outcome] || a.outcome}${a.commit ? ` (${a.commit})` : ''} | ${(a.reason || '').replace(/[\\|]/g, '\\$&')} |`);
     lines.push('');
   }
   for (const a of s.attempts.filter(x => x.summary)) lines.push(`- **${a.finding.title}**: ${a.summary}`);

@@ -179,7 +179,7 @@ export function reportMarkdown(session, result) {
   if (result) lines.push(`**Overall, before → after:** ${result.verdict} (confidence: ${result.confidence})`, '', ...result.headlines.map(h => `- ${h.kind === 'improved' ? '✅' : '❌'} ${h.text}`), '');
   if (session.attempts.length) {
     lines.push('| Problem | Where | Outcome | Why |', '| --- | --- | --- | --- |');
-    for (const a of session.attempts) lines.push(`| ${a.finding.title.replace(/\|/g, '\\|')} | \`${where(a.finding)}\` | ${a.outcome === 'kept' ? '✅ fixed' : `❌ ${OUTCOME[a.outcome] || a.outcome}`} | ${(a.reason || '').replace(/\|/g, '\\|')} |`);
+    for (const a of session.attempts) lines.push(`| ${a.finding.title.replace(/[\\|]/g, '\\$&')} | \`${where(a.finding)}\` | ${a.outcome === 'kept' ? '✅ fixed' : `❌ ${OUTCOME[a.outcome] || a.outcome}`} | ${(a.reason || '').replace(/[\\|]/g, '\\$&')} |`);
     lines.push('');
   }
   if (session.skipped.length) lines.push('Not attempted:', ...session.skipped.map(s => `- ${s.title}: ${s.reason}`), '');

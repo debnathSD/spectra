@@ -57,8 +57,17 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-      # Trusted Publishing needs npm 11.5.1 or newer
-      - run: npm install -g npm@11.19.0
+      # Trusted Publishing needs npm 11.5.1 or newer: Node 24 bundles it (24.5 and later)
+      - name: npm is new enough for Trusted Publishing
+        run: |
+          node -e '
+            const [a, b, c] = process.argv[1].split(".").map(Number);
+            if (a < 11 || (a === 11 && (b < 5 || (b === 5 && c < 1)))) {
+              console.error(`::error title=npm too old::npm ${process.argv[1]} is older than 11.5.1, which Trusted Publishing needs.`);
+              process.exit(1);
+            }
+            console.log(`npm ${process.argv[1]}`);
+          ' "$(npm --version)"
       - run: npm ci --no-audit --no-fund
       - name: The tag matches package.json, and CHANGELOG.md has its notes
         id: version

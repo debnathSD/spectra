@@ -32,7 +32,7 @@ if (Number.isNaN(pass)) {
     // the first stack frame in Spectra's own code, not in node_modules or Node itself
     const frame = [...block.matchAll(/\(((?:file:\/\/)?[^()\s]+?):(\d+):\d+\)/g)].map(m => ({ file: repoPath(m[1]), line: m[2] })).find(f => !f.file.startsWith('..') && !f.file.includes('node_modules') && !f.file.startsWith('node:'));
     if (tfile) annotate(tfile, tline, 'Test failed', `${name}: ${error}`);
-    out.push(`  - **${name}** (${tfile ? fileLink(tfile, tline) : 'unknown file'}): ${error.replace(/\|/g, '\\|').slice(0, 300)}${frame ? ` · thrown at ${fileLink(frame.file, frame.line)}` : ''}`);
+    out.push(`  - **${name}** (${tfile ? fileLink(tfile, tline) : 'unknown file'}): ${error.replace(/[\\|]/g, '\\$&').slice(0, 300)}${frame ? ` · thrown at ${fileLink(frame.file, frame.line)}` : ''}`);
   }
 }
 // annotations went to stdout above; the note goes to its file (or stdout without --note)

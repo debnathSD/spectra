@@ -22,6 +22,15 @@ import { REPORT_SCHEMA_VERSION } from '../shared/result.js';
 import { buildSignInUrl, hasLoginForm, looksSignedOut, normalizeSignIn, parsePairs, signInWithForm, waitForManualSignIn } from './signin.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+// A value as a JavaScript literal for a script Spectra puts into the page. JSON
+// is valid JavaScript; the characters that could end a script element or a line
+// early in an older engine are escaped too, so a value can never become code.
+// Objects go through JSON.parse, because an object literal reads a "__proto__"
+// key as the prototype rather than as a key.
+const UNSAFE = { '<': '\\u003C', '>': '\\u003E', '/': '\\u002F', '\u2028': '\\u2028', '\u2029': '\\u2029' };
+const safeJson = value => JSON.stringify(value).replace(/[<>/\u2028\u2029]/g, c => UNSAFE[c]);
+export const jsLiteral = value => (value !== null && typeof value === 'object' ? `JSON.parse(${safeJson(JSON.stringify(value))})` : safeJson(value));
 const PROBE_SOURCE = fs.readFileSync(
   path.join(here, 'probe.browser.js'),
   'utf8',
@@ -186,9 +195,7 @@ export class PerfSession extends EventEmitter {
     // Inject a small runtime hint so the in-page probe can adapt to the detected
     // framework/bundler (react/vue/svelte/next) before the probe runs.
     try {
-      await this.inject(`window.__SPECTRA_FRAMEWORK__ = ${JSON.stringify(
-        FRAMEWORK,
-      )};`);
+      await this.inject(`window.__SPECTRA_FRAMEWORK__ = ${jsLiteral(FRAMEWORK)};`);
     } catch (e) {
       // ignore injection errors
     }
@@ -343,8 +350,8 @@ export class PerfSession extends EventEmitter {
       const storage = parsePairs(s.storage);
       if (storage.length)
         await this.inject(
-          `(() => { if (location.origin !== ${JSON.stringify(origin)}) return; try { ${storage
-            .map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(v)});`)
+          `(() => { if (location.origin !== ${jsLiteral(origin)}) return; try { ${storage
+            .map(([k, v]) => `localStorage.setItem(${jsLiteral(k)}, ${jsLiteral(v)});`)
             .join(' ')} } catch (e) {} })();`,
           { now: false },
         );

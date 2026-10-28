@@ -36,7 +36,7 @@ const notes = prefix =>
         .map(f => read(f))
         .filter(Boolean)
     : [];
-const firstLine = text => (text || '').split('\n')[0].replace(/\|/g, '\\|');
+const firstLine = text => (text || '').split('\n')[0].replace(/[\\|]/g, '\\$&');
 
 // ------------------------------------------------------------------ the run's jobs, from the API
 const api = async url => {

@@ -32,7 +32,8 @@ describes the project layout and how each part works.
 ## Making a change
 
 1. Branch from `main`, and keep the change to one subject.
-2. Add or update tests next to the code (`server/**/test-*.js`, run with Node's test runner).
+2. Add or update tests next to the code (`server/**/test-*.js`, run with Node's test runner). For a pure function
+   with a rule that must always hold, add a property to `server/test-properties.js` (fast-check).
 3. Run `npm test` and `npm run lint`.
 4. When behaviour changes, update the README, DOCS.md and the website's docs pages, and add a line to the top
    section of [CHANGELOG.md](CHANGELOG.md).

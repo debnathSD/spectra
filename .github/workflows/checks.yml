@@ -206,7 +206,7 @@ jobs:
         run: |
           git worktree add "$RUNNER_TEMP/base" "${{ github.event.pull_request.base.sha }}"
           cd "$RUNNER_TEMP/base"
-          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
+          npm ci --no-audit --no-fund
           npm run build
           node "$GITHUB_WORKSPACE/scripts/size-report.mjs" --root "$RUNNER_TEMP/base" --json "$RUNNER_TEMP/base-size.json"
       - name: Sizes against their budgets

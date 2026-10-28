@@ -90,6 +90,7 @@
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "fast-check": "^4.10.2",
     "globals": "^17.13.0",
     "highlight.js": "^11.10.0",
     "publint": "^0.3.25",
