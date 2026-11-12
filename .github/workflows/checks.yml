@@ -333,7 +333,7 @@ jobs:
         run: npx --yes snyk@1.1308.2 test --sarif-file-output=snyk.sarif --json-file-output=snyk.json
       - name: Results to the Security tab
         if: steps.when.outputs.run == 'true' && hashFiles('snyk.sarif') != '' && github.event_name != 'pull_request'
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: snyk.sarif
           category: snyk
