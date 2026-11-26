@@ -263,7 +263,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: New or changed dependencies
         id: review
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
         with:
           fail-on-severity: high
           comment-summary-in-pr: never
@@ -333,7 +333,7 @@ jobs:
         run: npx --yes snyk@1.1308.2 test --sarif-file-output=snyk.sarif --json-file-output=snyk.json
       - name: Results to the Security tab
         if: steps.when.outputs.run == 'true' && hashFiles('snyk.sarif') != '' && github.event_name != 'pull_request'
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
         with:
           sarif_file: snyk.sarif
           category: snyk
